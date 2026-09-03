@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leo Perfecto — Mockup Accesible TEA</title>
+<style>
+  :root {
+    --primary: #4F46E5;
+    --primary-dark: #3730A3;
+    --success: #16A34A;
+    --warning: #D97706;
+    --error: #DC2626;
+    --bg-soft: #F8FAFC;
+    --text-primary: #1F2937;
+    --text-secondary: #6B7280;
+    --surface: #FFFFFF;
+    --border: #E5E7EB;
+    --tea-bg: #FFFBEB;
+    --tea-border: #FCD34D;
+    --radius: 16px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #F3F4F6;
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
+  .phone {
+    width: 100%;
+    max-width: 390px;
+    height: 820px;
+    background: var(--surface);
+    border-radius: 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border: 8px solid #1F2937;
+  }
+  .screen {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+  }
+  .screen.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* NAVBAR */
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 16px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .navbar h2 { font-size: 17px; font-weight: 700; }
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px;
+  }
+
+  /* BOTONES */
+  .btn {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 10px;
+    text-align: center;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--primary-dark); transform: scale(1.01); }
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+  }
+  .btn-outline:hover { background: var(--primary); color: white; }
+  .btn-tea {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
+    font-size: 14px;
+  }
+  .btn-tea:hover { transform: scale(1.02); }
+
+  /* INPUTS */
+  .input-group { margin-bottom: 14px; }
+  .input-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+  }
+  .input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 16px;
+    transition: border-color 0.2s;
+  }
+  .input-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+    transition: all 0.2s;
+  }
+  .card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .card-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .card-subtitle { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* PROGRESS BAR */
+  .progress-bar {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  /* ============================================
+     FORMATO TEA — TEXTO TÉCNICO ACCESIBLE
+     ============================================ */
+
+  .technical-text {
+    background: var(--bg-soft);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    /* PAUTA TEA 1: Alineación izquierda, NUNCA justificado */
+    text-align: left;
+    /* PAUTA TEA 2: Interlineado amplio */
+    line-height: 1.8;
+    /* PAUTA TEA 3: Tamaño de letra legible */
+    font-size: 16px;
+  }
+
+  .technical-text h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--primary-dark);
+    /* PAUTA TEA 4: Espaciado generoso después de títulos */
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary);
+  }
+
+  .technical-text p {
+    /* PAUTA TEA 5: Párrafos cortos (1-2 oraciones) */
+    margin-bottom: 16px;
+    /* PAUTA TEA 6: Espaciado entre párrafos */
+  }
+
+  .technical-text strong {
+    /* PAUTA TEA 7: Conceptos clave en negrita */
+    color: var(--primary-dark);
+    font-weight: 700;
+  }
+
+  .technical-text .icon-inline {
+    /* PAUTA TEA 8: Iconos para apoyar comprensión */
+    font-size: 18px;
+    margin-right: 4px;
+  }
+
+  .technical-text ul {
+    /* PAUTA TEA 9: Listas con viñetas claras */
+    margin-left: 20px;
+    margin-bottom: 16px;
+  }
+
+  .technical-text li {
+    margin-bottom: 10px;
+    line-height: 1.8;
+  }
+
+  /* ============================================
+     RESUMEN TEA — PANEL SIMPLIFICADO
+     ============================================ */
+
+  .tea-summary-panel {
+    background: var(--tea-bg);
+    border: 2px solid var(--tea-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 12px;
+    display: none;
+    /* PAUTA TEA: Mismo formato accesible */
+    text-align: left;
+    line-height: 1.9;
+    font-size: 16px;
+  }
+
+  .tea-summary-panel.show {
+    display: block;
+    animation: slideDown 0.4s ease;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; max-height: 0; }
+    to { opacity: 1; max-height: 800px; }
+  }
+
+  .tea-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #F59E0B;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .tea-summary-panel h4 {
+    font-size: 16px;
+    color: #92400E;
+    margin-bottom: 12px;
+  }
+
+  .tea-summary-panel p {
+    margin-bottom: 14px;
+    color: #78350F;
+  }
+
+  .tea-summary-panel .tea-tip {
+    background: white;
+    border-left: 4px solid var(--tea-border);
+    padding: 10px 12px;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    color: #92400E;
+    margin-top: 12px;
+  }
+
+  /* GAME OPTIONS */
+  .option {
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: left;
+  }
+  .option:hover { border-color: var(--primary); background: #EEF2FF; }
+  .option.correct { border-color: var(--success); background: #F0FDF4; }
+  .option.wrong { border-color: var(--error); background: #FEF2F2; }
+  .option.disabled { opacity: 0.5; pointer-events: none; }
+
+  /* WORD CHIPS */
+  .word-chip {
+    display: inline-block;
+    padding: 10px 16px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    margin: 4px;
+    cursor: pointer;
+    font-size: 15px;
+    background: var(--surface);
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .word-chip:hover { border-color: var(--primary); background: #EEF2FF; }
+  .word-chip.selected { border-color: var(--primary); background: #EEF2FF; border-width: 3px; box-shadow: 0 0 0 3px rgba(79,70,229,0.15); }
+  .word-chip.placed { opacity: 0.3; pointer-events: none; }
+
+  /* CATEGORY ZONES */
+  .category-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 10px;
+    min-height: 70px;
+    background: var(--bg-soft);
+  }
+  .category-zone h4 { font-size: 14px; margin-bottom: 8px; color: var(--text-secondary); }
+  .category-zone .zone-words { min-height: 30px; }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    text-align: center;
+  }
+  .stat-number { font-size: 24px; font-weight: 700; color: var(--primary); }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+
+  /* RESULTS */
+  .result-emoji { font-size: 56px; text-align: center; margin: 12px 0; }
+  .result-score { font-size: 42px; font-weight: 700; text-align: center; color: var(--primary); }
+  .result-message { text-align: center; font-size: 15px; margin: 10px 0; line-height: 1.5; }
+
+  /* PRIVACY BOX */
+  .privacy-box {
+    background: var(--bg-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  /* ACHIEVEMENT */
+  .achievement {
+    background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    margin-top: 14px;
+  }
+  .achievement-icon { font-size: 32px; }
+  .achievement-text { font-weight: 700; font-size: 14px; margin-top: 6px; line-height: 1.4; }
+
+  /* TIMER */
+  .timer {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--error);
+    margin-bottom: 12px;
+    padding: 8px;
+    background: #FEF2F2;
+    border-radius: 8px;
+  }
+
+  /* LIVES */
+  .lives { text-align: right; font-size: 18px; margin-bottom: 10px; }
+
+  /* SCROLLBAR */
+  .screen::-webkit-scrollbar { width: 4px; }
+  .screen::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* TEA INFO BOX */
+  .tea-info {
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #065F46;
+    line-height: 1.5;
+  }
+  .tea-info strong { color: #047857; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- ========== LOGIN ========== -->
+  <div class="screen active" id="screen-login">
+    <div style="text-align:center; margin-top:32px; margin-bottom:20px;">
+      <div style="font-size:56px;">📚</div>
+      <h1 style="font-size:22px; margin-top:10px;">Leo Perfecto</h1>
+      <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Mejora tu comprensión lectora paso a paso</p>
+    </div>
+    <div class="input-group">
+      <label>👤 Nombre de usuario</label>
+      <input type="text" placeholder="Ej: estudiante01" value="estudiante01">
+    </div>
+    <div class="input-group">
+      <label>🔒 Contraseña</label>
+      <input type="password" placeholder="Mínimo 8 caracteres" value="password123">
+    </div>
+    <button class="btn btn-primary" onclick="goTo('screen-dashboard')">Iniciar Sesión</button>
+    <button class="btn btn-outline" onclick="alert('Registro simulado')">Registrarse</button>
+    <div class="privacy-box">
+      🔒 Tu privacidad es importante.<br>
+      No usamos tu RUT ni datos personales para identificarte.
+    </div>
+  </div>
+
+  <!-- ========== DASHBOARD ========== -->
+  <div class="screen" id="screen-dashboard">
+    <div class="navbar">
+      <span></span>
+      <h2>Mi Progreso</h2>
+      <span style="font-size:20px;">👤</span>
+    </div>
+    <div class="card" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color:white;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:13px; opacity:0.9;">NIVEL 3</div>
+          <div style="font-size:17px; font-weight:700;">📚 Lector Avanzado</div>
+        </div>
+        <div style="width:48px; height:48px; border:3px solid rgba(255,255,255,0.4); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;">65%</div>
+      </div>
+      <div class="progress-bar" style="background:rgba(255,255,255,0.3); margin-top:10px;">
+        <div class="progress-fill" style="width:65%; background:white;"></div>
+      </div>
+    </div>
+
+    <h3 style="font-size:15px; margin:14px 0 8px; color:var(--text-secondary);">─── UNIDADES ───</h3>
+
+    <div class="card" onclick="goTo('screen-lectura-tea')">
+      <div class="card-title">📖 LECTURA TÉCNICA</div>
+      <div class="card-subtitle">Practica con textos académicos reales. Usa el botón naranja para ver el resumen adaptado.</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:45%;"></div></div>
+    </div>
+
+    <div class="card" onclick="goTo('screen-game1')">
+      <div class="card-title">🔵 UNIDAD 1 — Palabras Clave</div>
+      <div class="card-subtitle">Identifica sustantivos, verbos, adjetivos y conectores</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:60%;"></div></div>
+    </div>
+
+    <div class="card" onclick="goTo('screen-game2')">
+      <div class="card-title">🟢 UNIDAD 2 — Clasificación</div>
+      <div class="card-subtitle">Clasifica palabras en categorías gramaticales</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:30%; background:var(--success);"></div></div>
+    </div>
+
+    <div class="card" style="opacity:0.6;">
+      <div class="card-title">🔴 UNIDAD 3 — Comprensión Lectora</div>
+      <div class="card-subtitle">Comprende textos completos en profundidad</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:0%; background:var(--error);"></div></div>
+      <div style="text-align:right; margin-top:6px; font-size:12px; color:var(--text-secondary);">🔒 Bloqueado</div>
+    </div>
+
+    <h3 style="font-size:15px; margin:14px 0 8px; color:var(--text-secondary);">─── ESTADÍSTICAS ───</h3>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-number">12</div><div class="stat-label">Juegos completados</div></div>
+      <div class="stat-box"><div class="stat-number">78%</div><div class="stat-label">Efectividad</div></div>
+      <div class="stat-box"><div class="stat-number">5</div><div class="stat-label">Racha de días</div></div>
+      <div class="stat-box"><div class="stat-number">3</div><div class="stat-label">Logros desbloqueados</div></div>
+    </div>
+  </div>
+
+  <!-- ========== LECTURA TÉCNICA CON FORMATO TEA ========== -->
+  <div class="screen" id="screen-lectura-tea">
+    <div class="navbar">
+      <button class="back-btn" onclick="goTo('screen-dashboard')">←</button>
+      <h2>📖 Lectura Técnica</h2>
+      <span></span>
+    </div>
+
+    <div class="tea-info">
+      <strong>💡 Consejo:</strong> Este texto está escrito con formato accesible.<br>
+      Toca el botón naranja 🟠 para ver un resumen adaptado.
+    </div>
+
+    <!-- TEXTO TÉCNICO CON FORMATO TEA -->
+    <div class="technical-text">
+      <h3>🌍 El Cambio Climático y sus Efectos</h3>
+
+      <p>
+        <span class="icon-inline">🌡️</span> El <strong>cambio climático</strong> es el calentamiento de la Tierra. Este calentamiento es causado por las actividades humanas.
+      </p>
+
+      <p>
+        <span class="icon-inline">🏭</span> Los humanos queman <strong>combustibles fósiles</strong>. Los combustibles fósiles son el petróleo, el carbón y el gas natural.
+      </p>
+
+      <p>
+        <span class="icon-inline">💨</span> Al quemar estos combustibles, se liberan <strong>gases de efecto invernadero</strong>. Estos gases se quedan en la atmósfera.
+      </p>
+
+      <p>
+        <span class="icon-inline">🌊</span> El calentamiento causa muchos problemas:
+      </p>
+
+      <ul>
+        <li>El nivel del mar sube.</li>
+        <li>Los glaciares se derriten.</li>
+        <li>Hay más sequías e inundaciones.</li>
+        <li>Muchas especies de animales están en peligro.</li>
+      </ul>
+
+      <p>
+        <span class="icon-inline">⚠️</span> La <strong>Organización de las Naciones Unidas (ONU)</strong> dice que este es un problema urgente. Todos los países deben actuar.
+      </p>
+
+      <p>
+        <span class="icon-inline">🤝</span> En 2015, los países firmaron el <strong>Acuerdo de París</strong>. Este acuerdo busca limitar el calentamiento a 1.5 grados Celsius.
+      </p>
+    </div>
+
+    <!-- BOTÓN RESUMEN TEA -->
+    <button class="btn btn-tea" onclick="toggleTeaSummary()">
+      🟠 Ver Resumen Adaptado para TEA
+    </button>
+
+    <!-- RESUMEN ADAPTADO (inicialmente oculto) -->
+    <div class="tea-summary-panel" id="teaSummary">
+      <div class="tea-badge">✨ Adaptado para TEA</div>
+      <h4>📋 Resumen del texto</h4>
+
+      <p>
+        <strong>1. ¿Qué es el cambio climático?</strong><br>
+        Es el calentamiento de la Tierra. Lo causan los humanos.
+      </p>
+
+      <p>
+        <strong>2. ¿Qué lo causa?</strong><br>
+        La quema de petróleo, carbón y gas natural.
+      </p>
+
+      <p>
+        <strong>3. ¿Qué gases se liberan?</strong><br>
+        Gases de efecto invernadero. Se quedan en el aire.
+      </p>
+
+      <p>
+        <strong>4. ¿Qué problemas causa?</strong><br>
+        El mar sube. Los glaciares se derriten. Hay sequías e inundaciones. Los animales están en peligro.
+      </p>
+
+      <p>
+        <strong>5. ¿Qué dice la ONU?</strong><br>
+        Que es un problema urgente. Todos deben ayudar.
+      </p>
+
+      <p>
+        <strong>6. ¿Qué es el Acuerdo de París?</strong><br>
+        Un pacto de 2015. Busca que la Tierra no se caliente más de 1.5 grados.
+      </p>
+
+      <div class="tea-tip">
+        💡 <strong>Palabras clave:</strong> cambio climático, combustibles fósiles, gases de efecto invernadero, ONU, Acuerdo de París.
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="goTo('screen-game3')">
+      🎮 Practicar Comprensión Lectora
+    </button>
+  </div>
+
+  <!-- ========== GAME 1: PALABRAS CLAVE ========== -->
+  <div class="screen" id="screen-game1">
+    <div class="navbar">
+      <button class="back-btn" onclick="goTo('screen-dashboard')">←</button>
+      <h2>Texto 3/12</h2>
+      <span></span>
+    </div>
+    <div class="technical-text">
+      <h3>🧙 Harry Potter y la Misión</h3>
+      <p>
+        Harry Potter <strong>caminaba</strong> por el <strong>pasillo</strong> de <strong>Hogwarts</strong>.
+      </p>
+      <p>
+        Los <strong>retratos</strong> en las <strong>paredes</strong> le <strong>hablaban</strong> mientras él <strong>avanzaba</strong>.
+      </p>
+      <button class="btn btn-outline" style="margin-top:8px; font-size:13px; padding:8px 12px; width:auto; display:inline-block;" onclick="toggleSimplify('simplify1')">
+        📖 Lectura Fácil
+      </button>
+      <div class="tea-summary-panel" id="simplify1" style="background:#EEF2FF; border-color:var(--primary);">
+        <div class="tea-badge" style="background:var(--primary);">✨ Simplificado por IA</div>
+        <p>Harry Potter camina en Hogwarts.</p>
+        <p>Hogwarts es una escuela mágica.</p>
+        <p>Harry ve retratos en las paredes.</p>
+        <p>Los retratos hablan con Harry.</p>
+        <p>Harry va a un lugar importante.</p>
+        <button class="btn btn-outline" style="margin-top:8px; font-size:13px; padding:8px 12px; width:auto;" onclick="toggleSimplify('simplify1')">📖 Ver Original</button>
+      </div>
+    </div>
+    <div style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">Pregunta 2 de 5</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:40%;"></div></div>
+    <p style="margin:14px 0; font-size:16px; font-weight:600; line-height:1.5;">¿Qué tipo de palabra es "Hogwarts"?</p>
+    <div class="option" onclick="selectOption(this, true, '¡Correcto! Hogwarts es el nombre de un lugar. Los sustantivos nombran personas, lugares o cosas.')">🔵 Un sustantivo</div>
+    <div class="option" onclick="selectOption(this, false, 'Casi... Hogwarts no indica una acción. Es el nombre del lugar.')">🟢 Un verbo</div>
+    <div class="option" onclick="selectOption(this, false, 'No exactamente. Un adjetivo describe, pero Hogwarts es un nombre propio.')">🟡 Un adjetivo</div>
+    <div class="option" onclick="selectOption(this, false, 'No es un conector. Los conectores unen ideas, como "porque" o "pero".')">🟣 Un conector</div>
+    <div id="feedback1" style="margin-top:10px; padding:12px; border-radius:var(--radius); display:none; line-height:1.5;"></div>
+    <button class="btn btn-primary" id="next1" style="display:none;" onclick="goTo('screen-result')">Siguiente →</button>
+  </div>
+
+  <!-- ========== GAME 2: CLASIFICACIÓN ========== -->
+  <div class="screen" id="screen-game2">
+    <div class="navbar">
+      <button class="back-btn" onclick="goTo('screen-dashboard')">←</button>
+      <h2>Clasificar</h2>
+      <span></span>
+    </div>
+    <div class="lives">❤️❤️ 💡</div>
+    <p style="font-size:14px; color:var(--text-secondary); margin-bottom:12px; line-height:1.5;">Toca una palabra. Luego toca la categoría correcta.</p>
+    <div style="margin-bottom:16px; text-align:center;">
+      <div class="word-chip" onclick="selectWord(this)">rápidamente</div>
+      <div class="word-chip" onclick="selectWord(this)">Resistencia</div>
+      <div class="word-chip" onclick="selectWord(this)">necesita</div>
+      <div class="word-chip" onclick="selectWord(this)">aunque</div>
+      <div class="word-chip" onclick="selectWord(this)">descubriendo</div>
+    </div>
+    <div class="category-zone" onclick="placeWord(this, 'sustantivo')">
+      <h4>🔵 Sustantivos (nombres de cosas, personas o lugares)</h4>
+      <div class="zone-words"></div>
+    </div>
+    <div class="category-zone" onclick="placeWord(this, 'verbo')">
+      <h4>🟢 Verbos (acciones)</h4>
+      <div class="zone-words"></div>
+    </div>
+    <div class="category-zone" onclick="placeWord(this, 'adjetivo')">
+      <h4>🟡 Adjetivos y Adverbios (cómo son las cosas)</h4>
+      <div class="zone-words"></div>
+    </div>
+    <div class="category-zone" onclick="placeWord(this, 'conector')">
+      <h4>🟣 Conectores (unen ideas)</h4>
+      <div class="zone-words"></div>
+    </div>
+  </div>
+
+  <!-- ========== GAME 3: COMPRENSIÓN LECTORA CON TEXTO TÉCNICO ========== -->
+  <div class="screen" id="screen-game3">
+    <div class="navbar">
+      <button class="back-btn" onclick="goTo('screen-dashboard')">←</button>
+      <h2>Comprensión Lectora</h2>
+      <span></span>
+    </div>
+    <div class="timer">⏱️ Modo Práctica — Sin límite de tiempo</div>
+
+    <div class="tea-info">
+      <strong>💡 Consejo:</strong> Lee el texto con calma. Toca el botón naranja si necesitas ayuda.
+    </div>
+
+    <!-- TEXTO TÉCNICO CON FORMATO TEA -->
+    <div class="technical-text">
+      <h3>🧬 La Fotosíntesis en las Plantas</h3>
+
+      <p>
+        <span class="icon-inline">🌱</span> Las <strong>plantas</strong> necesitan luz del sol para vivir. Este proceso se llama <strong>fotosíntesis</strong>.
+      </p>
+
+      <p>
+        <span class="icon-inline">☀️</span> La fotosíntesis ocurre en las <strong>hojas</strong> de las plantas. Las hojas tienen una sustancia verde llamada <strong>clorofila</strong>.
+      </p>
+
+      <p>
+        <span class="icon-inline">🔄</span> Durante la fotosíntesis, la planta hace tres cosas:
+      </p>
+
+      <ul>
+        <li>Toma luz del sol.</li>
+        <li>Absorbe agua por las raíces.</li>
+        <li>Toma dióxido de carbono del aire.</li>
+      </ul>
+
+      <p>
+        <span class="icon-inline">🍃</span> Con estos tres elementos, la planta produce <strong>glucosa</strong>. La glucosa es el alimento de la planta.
+      </p>
+
+      <p>
+        <span class="icon-inline">💨</span> Como resultado, la planta libera <strong>oxígeno</strong> al aire. El oxígeno es importante para los humanos y los animales.
+      </p>
+
+      <p>
+        <span class="icon-inline">🌍</span> Sin la fotosíntesis, no habría oxígeno en la Tierra. Los seres vivos no podrían respirar.
+      </p>
+    </div>
+
+    <!-- BOTÓN RESUMEN TEA -->
+    <button class="btn btn-tea" onclick="toggleTeaSummary3()">
+      🟠 Ver Resumen Adaptado para TEA
+    </button>
+
+    <!-- RESUMEN ADAPTADO -->
+    <div class="tea-summary-panel" id="teaSummary3">
+      <div class="tea-badge">✨ Adaptado para TEA</div>
+      <h4>📋 Resumen del texto</h4>
+
+      <p><strong>1. ¿Qué es la fotosíntesis?</strong><br>
+      Es el proceso que usan las plantas para comer. Usan luz del sol.</p>
+
+      <p><strong>2. ¿Dónde ocurre?</strong><br>
+      En las hojas. Las hojas son verdes por la clorofila.</p>
+
+      <p><strong>3. ¿Qué necesita la planta?</strong><br>
+      Tres cosas: luz del sol, agua y dióxido de carbono.</p>
+
+      <p><strong>4. ¿Qué produce?</strong><br>
+      Produce glucosa (su alimento) y oxígeno.</p>
+
+      <p><strong>5. ¿Por qué es importante?</strong><br>
+      Porque sin fotosíntesis no hay oxígeno. Los seres vivos no podrían respirar.</p>
+
+      <div class="tea-tip">
+        💡 <strong>Palabras clave:</strong> fotosíntesis, clorofila, glucosa, oxígeno, dióxido de carbono.
+      </div>
+    </div>
+
+    <p style="margin:16px 0 10px; font-size:16px; font-weight:600; line-height:1.5;">¿Cuál es la idea principal del texto?</p>
+    <div class="option" onclick="selectOption3(this, false, 'No exactamente. El texto no se enfoca solo en la clorofila. Habla de todo el proceso.')">🔵 La clorofila es la sustancia verde de las hojas</div>
+    <div class="option" onclick="selectOption3(this, true, '¡Correcto! El texto explica qué es la fotosíntesis, qué necesita y por qué es importante para la vida.')">🟢 La fotosíntesis es un proceso vital que permite a las plantas producir alimento y oxígeno</div>
+    <div class="option" onclick="selectOption3(this, false, 'No es la idea principal. La glucosa es solo uno de los productos del proceso.')">🟡 Las plantas producen glucosa para alimentarse</div>
+    <div class="option" onclick="selectOption3(this, false, 'No es correcto. El texto no habla de problemas, sino de un proceso natural.')">🟣 Las plantas tienen problemas para obtener luz solar</div>
+    <div id="feedback3" style="margin-top:10px; padding:12px; border-radius:var(--radius); display:none; line-height:1.5;"></div>
+    <button class="btn btn-primary" id="next3" style="display:none;" onclick="goTo('screen-result')">Siguiente →</button>
+  </div>
+
+  <!-- ========== RESULTADOS ========== -->
+  <div class="screen" id="screen-result">
+    <div class="navbar">
+      <button class="back-btn" onclick="goTo('screen-dashboard')">←</button>
+      <h2>Resultados</h2>
+      <span></span>
+    </div>
+    <div class="result-emoji">🎉</div>
+    <div class="result-score">80%</div>
+    <p class="result-message">¡Muy bien!<br>Has respondido 4 de 5 preguntas correctamente.</p>
+    <button class="btn btn-primary" onclick="goTo('screen-game3')">📖 Siguiente Texto</button>
+    <button class="btn btn-outline" onclick="goTo('screen-game1')">🔄 Reintentar</button>
+    <button class="btn btn-outline" onclick="goTo('screen-dashboard')">📊 Ver Mi Progreso</button>
+    <div class="achievement">
+      <div class="achievement-icon">🚀</div>
+      <div class="achievement-text">¡Nuevo logro desbloqueado!<br><strong>"En Camino"</strong></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let selectedWord = null;
+
+  function goTo(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  function toggleSimplify(id) {
+    const panel = document.getElementById(id);
+    panel.classList.toggle('show');
+  }
+
+  function toggleTeaSummary() {
+    const panel = document.getElementById('teaSummary');
+    panel.classList.toggle('show');
+  }
+
+  function toggleTeaSummary3() {
+    const panel = document.getElementById('teaSummary3');
+    panel.classList.toggle('show');
+  }
+
+  function selectOption(el, isCorrect, message) {
+    const parent = el.parentElement;
+    const options = parent.querySelectorAll('.option');
+    options.forEach(opt => opt.classList.add('disabled'));
+
+    if (isCorrect) {
+      el.classList.add('correct');
+    } else {
+      el.classList.add('wrong');
+      options.forEach(opt => {
+        if (opt.getAttribute('onclick').includes('true')) {
+          opt.classList.add('correct');
+        }
+      });
+    }
+
+    const feedback = parent.querySelector('[id^="feedback"]');
+    feedback.style.display = 'block';
+    feedback.style.background = isCorrect ? '#F0FDF4' : '#FEF2F2';
+    feedback.style.borderLeft = '4px solid ' + (isCorrect ? 'var(--success)' : 'var(--error)');
+    feedback.innerHTML = '<strong>' + (isCorrect ? '✅ ¡Correcto!' : '❌ Casi...') + '</strong><br>' + message;
+
+    const nextBtn = parent.querySelector('[id^="next"]');
+    if (nextBtn) nextBtn.style.display = 'block';
+  }
+
+  function selectOption3(el, isCorrect, message) {
+    const parent = el.closest('.screen');
+    const options = parent.querySelectorAll('.option');
+    options.forEach(opt => opt.classList.add('disabled'));
+
+    if (isCorrect) {
+      el.classList.add('correct');
+    } else {
+      el.classList.add('wrong');
+      options.forEach(opt => {
+        const onclick = opt.getAttribute('onclick');
+        if (onclick && onclick.includes('true')) {
+          opt.classList.add('correct');
+        }
+      });
+    }
+
+    const feedback = document.getElementById('feedback3');
+    feedback.style.display = 'block';
+    feedback.style.background = isCorrect ? '#F0FDF4' : '#FEF2F2';
+    feedback.style.borderLeft = '4px solid ' + (isCorrect ? 'var(--success)' : 'var(--error)');
+    feedback.innerHTML = '<strong>' + (isCorrect ? '✅ ¡Correcto!' : '❌ Casi...') + '</strong><br>' + message;
+
+    document.getElementById('next3').style.display = 'block';
+  }
+
+  function selectWord(el) {
+    if (el.classList.contains('placed')) return;
+    document.querySelectorAll('.word-chip').forEach(w => w.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedWord = el;
+  }
+
+  function placeWord(zone, category) {
+    if (!selectedWord) {
+      alert('Primero toca una palabra de arriba');
+      return;
+    }
+    const wordText = selectedWord.textContent;
+    const correctMap = {
+      'Resistencia': 'sustantivo',
+      'necesita': 'verbo',
+      'descubriendo': 'verbo',
+      'rápidamente': 'adjetivo',
+      'aunque': 'conector'
+    };
+    const isCorrect = correctMap[wordText] === category;
+
+    if (isCorrect) {
+      selectedWord.classList.add('placed');
+      selectedWord.classList.remove('selected');
+      const zoneWords = zone.querySelector('.zone-words');
+      const clone = selectedWord.cloneNode(true);
+      clone.classList.remove('selected', 'placed');
+      clone.style.cursor = 'default';
+      clone.onclick = null;
+      zoneWords.appendChild(clone);
+      selectedWord = null;
+      const remaining = document.querySelectorAll('.word-chip:not(.placed)');
+      if (remaining.length === 0) {
+        setTimeout(() => {
+          alert('¡Ejercicio completado! 🎉');
+          goTo('screen-result');
+        }, 500);
+      }
+    } else {
+      selectedWord.classList.remove('selected');
+      selectedWord = null;
+      alert('❌ Intenta con otra categoría');
+    }
+  }
+</script>
+
+</body>
+</html>
