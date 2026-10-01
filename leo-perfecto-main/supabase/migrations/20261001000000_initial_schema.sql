@@ -1,4 +1,4 @@
--- Migrations will appear here as you chat with AI
+-- Migrations will appear here
 
 create table instituciones (
   id bigint primary key generated always as identity,
