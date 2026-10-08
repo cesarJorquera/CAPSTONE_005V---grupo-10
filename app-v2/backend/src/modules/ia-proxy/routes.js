@@ -9,7 +9,7 @@ export const iaRouter = Router();
 
 const PistaSchema = z.object({
   nivel: z.enum(["inicial", "basico", "intermedio", "avanzado"]),
-  fragmento: z.string().min(1).max(2000),
+  fragmento: z.string().min(1).max(5000),
   consulta: z.string().min(1).max(500),
 });
 
