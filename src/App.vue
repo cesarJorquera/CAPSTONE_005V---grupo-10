@@ -1,7 +1,7 @@
 <template>
   <div class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
     <AppNavbar 
-      :show-progress-button="sesionIniciada && !showProgreso" 
+      :show-progress-button="sesionIniciada && !showProgreso && currentScreen !== 'cargando'" 
       :sesion-iniciada="sesionIniciada"
       :mostrar-panel-docente="esDocente"
       @go-progreso="goToProgreso" 
