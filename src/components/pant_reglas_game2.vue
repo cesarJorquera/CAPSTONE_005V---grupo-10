@@ -23,12 +23,12 @@
         </div>
 
         <!-- Contenedores de ejemplo -->
-        <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div class="border-2 border-red-400 rounded-xl p-4">
             <h4 class="font-bold text-red-600 mb-2">Verbos</h4>
             <p class="text-sm">Palabras que indican acciones o estados.</p>
             <p class="text-sm italic">Ejemplo: correr, saltar, ser</p>
-            <div class="flex gap-2 mt-2">
+            <div class="flex flex-wrap justify-center gap-2 mt-2">
               <span class="bg-yellow-100 px-3 py-1 rounded">correr</span>
               <span class="bg-yellow-100 px-3 py-1 rounded">saltar</span>
             </div>
@@ -38,7 +38,7 @@
             <h4 class="font-bold text-blue-600 mb-2">Sustantivos</h4>
             <p class="text-sm">Palabras que nombran personas, lugares, objetos o ideas.</p>
             <p class="text-sm italic">Ejemplo: casa, libro, Harry</p>
-            <div class="flex gap-2 mt-2">
+            <div class="flex flex-wrap justify-center gap-2 mt-2">
               <span class="bg-yellow-100 px-3 py-1 rounded">casa</span>
               <span class="bg-yellow-100 px-3 py-1 rounded">libro</span>
             </div>
@@ -48,7 +48,7 @@
             <h4 class="font-bold text-purple-600 mb-2">Conectores</h4>
             <p class="text-sm">Palabras que unen ideas o partes de una oración.</p>
             <p class="text-sm italic">Ejemplo: pero, sin embargo, además</p>
-            <div class="flex gap-2 mt-2">
+            <div class="flex flex-wrap justify-center gap-2 mt-2">
               <span class="bg-yellow-100 px-3 py-1 rounded">pero</span>
               <span class="bg-yellow-100 px-3 py-1 rounded">además</span>
             </div>
@@ -58,7 +58,7 @@
             <h4 class="font-bold text-green-600 mb-2">Adjetivos</h4>
             <p class="text-sm">Palabras que describen o califican a los sustantivos.</p>
             <p class="text-sm italic">Ejemplo: grande, bonito, rápido</p>
-            <div class="flex gap-2 mt-2">
+            <div class="flex flex-wrap justify-center gap-2 mt-2">
               <span class="bg-yellow-100 px-3 py-1 rounded">grande</span>
               <span class="bg-yellow-100 px-3 py-1 rounded">rápido</span>
             </div>

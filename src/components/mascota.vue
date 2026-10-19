@@ -1,17 +1,17 @@
 <template>
-  <div class="fixed top-6 left-6 z-50">
+  <div class="fixed bottom-4 right-4 md:bottom-auto md:right-auto md:top-24 md:left-6 z-50">
     <div class="relative">
       <button 
         @click="handleMascotClick"
         class="text-4xl md:text-5xl transition-all focus:outline-none relative"
         :class="mascotClass"
       >
-        <img :src="mascotIcon" alt="Icono de Libro" class="w-32 h-32" />
+        <img :src="mascotIcon" alt="Icono de Libro" class="w-16 h-16 md:w-32 md:h-32" />
       </button>
       
-      <div v-if="activeMessageType === 'ayuda' && helpMessage" class="absolute top-0 left-full ml-4 w-80 max-w-xs">
+      <div v-if="activeMessageType === 'ayuda' && helpMessage" class="fixed left-4 right-4 bottom-24 md:absolute md:top-0 md:bottom-auto md:left-full md:right-auto md:ml-4 md:w-80 md:max-w-xs">
         <div class="bg-blue-100 rounded-xl shadow-xl p-4 border-2 border-blue-200 relative">
-          <div class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full w-4 h-4 bg-blue-100 border-l-2 border-t-2 border-blue-200 transform -rotate-45"></div>
+          <div class="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full w-4 h-4 bg-blue-100 border-l-2 border-t-2 border-blue-200 transform -rotate-45"></div>
           <p class="text-base text-gray-900">{{helpMessage}}</p>
           <div class="flex justify-center mt-2 gap-1">
             <span v-for="(msg, i) in helpMessages" :key="i" class="inline-block w-2 h-2 rounded-full" :style="{ background: i === helpClickCount ? '#2563eb' : '#dbeafe' }"></span>
@@ -24,10 +24,10 @@
           </button>
         </div>
       </div>
-   <div v-else-if="activeMessageType === 'feedback' && feedbackMessage" class="absolute top-0 left-full ml-4 w-80 max-w-xs">
+   <div v-else-if="activeMessageType === 'feedback' && feedbackMessage" class="fixed left-4 right-4 bottom-24 md:absolute md:top-0 md:bottom-auto md:left-full md:right-auto md:ml-4 md:w-80 md:max-w-xs">
      <div class="bg-blue-100 rounded-xl shadow-xl p-4 border-2 relative"
        :class="lastAnswerCorrect ? 'border-green-200' : 'border-red-200'">
-    <div class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full w-4 h-4 bg-blue-100 transform -rotate-45"
+    <div class="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full w-4 h-4 bg-blue-100 transform -rotate-45"
       :class="lastAnswerCorrect ? 'border-l-2 border-t-2 border-green-200' : 'border-l-2 border-t-2 border-red-200'" ></div>
           <p class="text-base text-gray-700" v-html="feedbackMessage"></p>
           <p v-if="explanationMessage" class="mt-2 text-base text-blue-700 bg-blue-100 rounded px-2 py-1">{{explanationMessage}}</p>
@@ -37,9 +37,9 @@
           >✕</button>
         </div>
       </div>
-      <div v-else-if="activeMessageType === 'none' && (currentScreen === 'questions' || currentScreen === 'dragdrop') && showInitialHelp" class="absolute top-0 left-full ml-4 w-80 max-w-xs">
+      <div v-else-if="activeMessageType === 'none' && (currentScreen === 'questions' || currentScreen === 'dragdrop') && showInitialHelp" class="fixed left-4 right-4 bottom-24 md:absolute md:top-0 md:bottom-auto md:left-full md:right-auto md:ml-4 md:w-80 md:max-w-xs">
         <div class="bg-white rounded-xl shadow-xl p-4 border-2 border-blue-200 relative">
-          <div class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full w-4 h-4 bg-white border-l-2 border-t-2 border-blue-200 transform -rotate-45"></div>
+          <div class="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full w-4 h-4 bg-white border-l-2 border-t-2 border-blue-200 transform -rotate-45"></div>
           <p class="text-sm text-blue-700 font-semibold">¡Si necesitas ayuda puedes hacerme click!</p>
           <button @click="closeInitialHelp" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">✕</button>
         </div>

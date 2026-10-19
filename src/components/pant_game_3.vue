@@ -29,7 +29,7 @@
       <transition name="slide-fade" mode="out-in">
         <!-- Durante el juego -->
         <div v-if="!juegoTerminado" 
-             class="relative w-full max-w-4xl bg-gradient-to-br from-blue-50 to-green-50 rounded-3xl shadow-2xl p-8 md:p-10 border-4 border-white/50 backdrop-blur-sm mb-8"
+             class="relative w-full max-w-4xl bg-gradient-to-br from-blue-50 to-green-50 rounded-3xl shadow-2xl p-3 md:p-10 border-4 border-white/50 backdrop-blur-sm mb-8"
              :key="textoActual?.id">
           
           <!-- Timer (solo en modo desafío) -->
@@ -49,10 +49,10 @@
           </div>
 
           <!-- Contenedor con fondo blanco para texto + pregunta + alternativas -->
-          <div class="bg-white rounded-3xl p-8 shadow-xl border-2 border-blue-100">
+          <div class="bg-white rounded-3xl p-3 md:p-8 shadow-xl border-2 border-blue-100">
             
             <!-- Texto principal (PRIMERO) -->
-            <div class="relative bg-gradient-to-br from-green-300 via-teal-300 to-cyan-300 rounded-3xl p-8 mb-8 shadow-lg border-3 border-green-400/50 transform hover:scale-[1.01] transition-all">
+            <div class="relative bg-gradient-to-br from-green-300 via-teal-300 to-cyan-300 rounded-3xl p-4 md:p-8 mb-8 shadow-lg border-3 border-green-400/50 transform hover:scale-[1.01] transition-all">
               <!-- Icono de libro decorativo -->
               <div class="absolute -top-4 -left-4 bg-white rounded-full p-3 shadow-lg">
                 <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -67,7 +67,7 @@
             <!-- Pregunta y alternativas (antes de responder) -->
             <div v-if="!mostrarFeedback">
               <!-- Pregunta con icono -->
-              <div class="flex items-start space-x-4 mb-8 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-2xl p-6 shadow-md border-2 border-blue-200">
+              <div class="flex items-start space-x-3 md:space-x-4 mb-8 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-2xl p-3 md:p-6 shadow-md border-2 border-blue-200">
                 <div class="flex-shrink-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full p-3 shadow-lg">
                   <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
@@ -85,10 +85,10 @@
                   :key="alt.id"
                   @click="seleccionarRespuesta(alt)"
                   :disabled="respuestaSeleccionada !== null"
-                  class="w-full bg-gradient-to-r from-white to-blue-50 hover:from-blue-100 hover:to-cyan-100 border-3 border-blue-200 hover:border-blue-400 rounded-2xl p-6 text-left transition-all duration-300 transform hover:scale-[1.03] hover:shadow-2xl disabled:cursor-not-allowed group"
+                  class="w-full bg-gradient-to-r from-white to-blue-50 hover:from-blue-100 hover:to-cyan-100 border-3 border-blue-200 hover:border-blue-400 rounded-2xl p-3 md:p-6 text-left transition-all duration-300 transform hover:scale-[1.03] hover:shadow-2xl disabled:cursor-not-allowed group"
                 >
-                  <div class="flex items-center space-x-5">
-                    <div class="flex-shrink-0 w-14 h-14 bg-blue-400 text-white rounded-2xl flex items-center justify-center font-bold text-2xl shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-transform">
+                  <div class="flex items-center space-x-3 md:space-x-5">
+                    <div class="flex-shrink-0 w-10 h-10 md:w-14 md:h-14 bg-blue-400 text-white rounded-2xl flex items-center justify-center font-bold text-2xl shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-transform">
                       {{ alt.id }}
                     </div>
                     <p class="flex-1 text-lg font-semibold text-gray-800 group-hover:text-gray-900 transition-colors">
@@ -107,7 +107,7 @@
             <div v-else>
               <!-- Resultado -->
               <div :class="[
-                'rounded-3xl p-10 mb-8 text-center shadow-2xl transform transition-all duration-500 border-4',
+                'rounded-3xl p-4 md:p-10 mb-8 text-center shadow-2xl transform transition-all duration-500 border-4',
                 respuestaCorrecta 
                   ? 'bg-gradient-to-br from-green-400 via-emerald-400 to-teal-400 border-green-300' 
                   : 'bg-gradient-to-br from-red-400 via-pink-400 to-rose-400 border-red-300'
@@ -135,7 +135,7 @@
                   v-for="alt in textoActual?.alternativas"
                   :key="alt.id"
                   :class="[
-                    'w-full rounded-2xl p-6 border-3 transition-all duration-300',
+                    'w-full rounded-2xl p-3 md:p-6 border-3 transition-all duration-300',
                     alt.correcta 
                       ? 'bg-green-100 border-green-500 shadow-lg' 
                       : respuestaSeleccionada?.id === alt.id 
@@ -143,9 +143,9 @@
                         : 'bg-gray-50 border-gray-300 opacity-50'
                   ]"
                 >
-                  <div class="flex items-center space-x-4">
+                  <div class="flex items-center space-x-3 md:space-x-4">
                     <div :class="[
-                      'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl shadow-lg',
+                      'flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-xl shadow-lg',
                       alt.correcta 
                         ? 'bg-green-500 text-white' 
                         : respuestaSeleccionada?.id === alt.id 
@@ -164,8 +164,8 @@
               </div>
 
               <!-- Explicación -->
-              <div class="bg-gradient-to-r from-blue-50 to-green-50 border-l-4 border-blue-500 rounded-2xl p-8 shadow-lg mb-6">
-                <div class="flex items-start space-x-4">
+              <div class="bg-gradient-to-r from-blue-50 to-green-50 border-l-4 border-blue-500 rounded-2xl p-4 md:p-8 shadow-lg mb-6">
+                <div class="flex items-start space-x-3 md:space-x-4">
                   <!-- Icono bombilla SVG -->
                   <div class="flex-shrink-0 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full p-3 shadow-lg">
                     <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">

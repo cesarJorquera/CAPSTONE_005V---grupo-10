@@ -1,8 +1,12 @@
 <template>
   <div class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
     <AppNavbar 
-      :show-progress-button="currentScreen !== 'intro' && !showProgreso" 
+      :show-progress-button="sesionIniciada && !showProgreso && currentScreen !== 'cargando'" 
+      :sesion-iniciada="sesionIniciada"
+      :mostrar-panel-docente="esDocente"
       @go-progreso="goToProgreso" 
+      @go-panel-docente="irAlPanelDocente"
+      @cerrar-sesion="salir"
     />
     <div v-if="showProgreso">
       <MiProgreso 
@@ -17,50 +21,27 @@
       />
     </div>
     <div v-else class="container mx-auto px-4 py-6 max-w-4xl" style="margin-top: 150px;">
-      <!-- Pantalla 1: Introducción -->
-      <div v-if="currentScreen === 'intro'" class="text-center space-y-6">
-        <div class="bg-white rounded-3xl shadow-xl p-8 md:p-12">
-          <img src="@/assets/icons/libro-sin-fondo-feliz.png" alt="Libro feliz" class="h-32 mx-auto mb-2" />
-          <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
-            Leo Perfecto App
-          </h1>
-          
-          <div class="space-y-6">
-            <div class="text-lg text-gray-600 mb-8">
-              ¡Hola! Para comenzar, escribe tu nombre:
-            </div>
-            
-            <div class="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 w-full px-4">
-              <input 
-                v-model="playerName" 
-                type="text" 
-                placeholder="Escribe tu nombre aquí..."
-                class="w-full sm:flex-1 sm:max-w-md px-4 py-3 text-base sm:text-lg border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:outline-none transition-colors"
-                @keyup.enter="goToWelcome"
-                @input="checkPlayerStatus"
-              >
-              
-              <button 
-                @click="goToWelcome"
-                :disabled="!playerName.trim()"
-                class="w-full sm:w-auto bg-gradient-to-r from-green-500 to-blue-600 text-white px-8 py-3 rounded-xl font-semibold text-base sm:text-lg transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-              >
-                Comenzar
-              </button>
-            </div>
-            
-            <!-- Mensaje de búsqueda -->
-            <div v-if="searchingPlayer" class="text-sm text-gray-500 animate-pulse">
-              🔍 Buscando nombre de jugador...
-            </div>
-            
-            <!-- Mensaje si el jugador fue encontrado -->
-            <div v-if="playerFound && !searchingPlayer" class="space-y-2">
-              <p class="text-green-600 font-semibold">✅ Jugador encontrado: {{ playerName }}</p>
-              <p class="text-sm text-gray-500">💡 Tu progreso anterior será cargado automáticamente</p>
-            </div>
-          </div>
-        </div>
+      <!-- Mientras se revisa si hay una sesión guardada (evita mostrar el login un instante) -->
+      <div v-if="currentScreen === 'cargando'" class="text-center text-gray-500 py-20 animate-pulse">
+        Cargando…
+      </div>
+
+      <!-- CU-02: login con Google (reemplaza la pantalla "escribe tu nombre") -->
+      <pant_login
+        v-if="currentScreen === 'login'"
+        :configurado="supabaseConfigurado"
+        :cargando="cargandoLogin"
+        :error="errorLogin"
+        @entrar-google="entrar"
+      />
+
+      <!-- CU-04: la puerta del panel docente. El panel real es Sprint 2 (PA-01) -->
+      <div v-if="currentScreen === 'panelDocente' && esDocente" class="bg-white rounded-3xl shadow-xl p-8 text-center">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">📊 Panel docente</h2>
+        <p class="text-gray-600 mb-6">Próximamente: aquí verás el avance de tus estudiantes.</p>
+        <button class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-xl" @click="goToProgreso">
+          Volver
+        </button>
       </div>
 
       <pant_bienvenida 
@@ -147,6 +128,17 @@ import pant_reglas_game2 from './components/pant_reglas_game2.vue'
 import pant_reglas_game4 from './components/pant_reglas_game4.vue'
 import pant_game_4 from './components/pant_game_4.vue'
 import mascota from './components/mascota.vue'
+import pant_login from './components/pant_login.vue'
+import { supabaseConfigurado } from './utils/supabaseClient'
+import {
+  entrarConGoogle,
+  cerrarSesion,
+  obtenerSesion,
+  escucharCambiosDeSesion,
+  cargarPerfil,
+  nombreVisible,
+  esDocente
+} from './utils/authService'
 import { getAllTextIds, getNextText } from './data/game1_texts'
 
 export default {
@@ -162,12 +154,13 @@ export default {
     pant_reglas_game2,
     pant_reglas_game4,
     pant_game_4,
-    mascota
+    mascota,
+    pant_login
   },
   data() {
     return {
-      currentScreen: 'intro',
-      playerName: '',
+      currentScreen: 'cargando', // 'cargando' → 'login' o directo al menú si hay sesión (CU-03)
+      playerName: '', // Ahora viene del perfil de Google, ya no se escribe a mano
       currentTextId: 'text1', // ID del texto actual en juego 1
       currentGame2TextId: 'drag1', // ID del texto actual en juego 2
       currentGame3TextId: 'comp1', // ID del texto actual en juego 3
@@ -175,12 +168,22 @@ export default {
       showProgreso: false,
       userProgress: null, // Progreso cargado desde localStorage
       isReturningUser: false, // Flag para usuarios que regresan
-      searchingPlayer: false, // Flag para mostrar mensaje de búsqueda
-      playerFound: false, // Flag para mostrar si el jugador fue encontrado
-      searchTimeout: null // Timeout para la búsqueda
+      // --- Cuentas y acceso (CU-01 a CU-04) ---
+      supabaseConfigurado,
+      usuario: null, // usuario de Supabase Auth (null = sin sesión)
+      perfil: null, // fila de la tabla profiles (incluye rol)
+      cargandoLogin: false,
+      errorLogin: '',
+      dejarDeEscucharSesion: null
     }
   },
   computed: {
+    sesionIniciada() {
+      return this.usuario !== null
+    },
+    esDocente() {
+      return esDocente(this.perfil)
+    },
     availableTextIds() {
       return getAllTextIds()
     },
@@ -189,53 +192,88 @@ export default {
     }
   },
   mounted() {
-    // Cargar último jugador conocido al iniciar la app
-    this.loadLastKnownPlayer()
+    this.iniciarAutenticacion()
   },
   beforeUnmount() {
-    // Limpiar timeout si existe
-    if (this.searchTimeout) {
-      clearTimeout(this.searchTimeout)
-    }
+    if (this.dejarDeEscucharSesion) this.dejarDeEscucharSesion()
   },
   methods: {
-    loadLastKnownPlayer() {
-      // Intentar cargar el último jugador registrado
-      const lastPlayer = localStorage.getItem('leo-perfecto-player')
-      if (lastPlayer) {
-        this.playerName = lastPlayer
-        // Verificar inmediatamente si el jugador existe
-        this.checkPlayerStatus()
-      }
-    },
-    checkPlayerStatus() {
-      // Limpiar timeout anterior si existe
-      if (this.searchTimeout) {
-        clearTimeout(this.searchTimeout)
-      }
-      
-      // Resetear estados
-      this.searchingPlayer = false
-      this.playerFound = false
-      
-      // Si no hay nombre, no buscar
-      if (!this.playerName.trim()) {
+    // ============================================
+    // CUENTAS Y ACCESO (CU-02, CU-03, CU-04)
+    // ============================================
+    async iniciarAutenticacion() {
+      if (!this.supabaseConfigurado) {
+        this.currentScreen = 'login' // la pantalla de login explica qué falta
         return
       }
-      
-      // Mostrar mensaje de búsqueda
-      this.searchingPlayer = true
-      
-      // Simular búsqueda con un pequeño delay para mejor UX
-      this.searchTimeout = setTimeout(() => {
-        this.searchingPlayer = false
-        this.playerFound = this.isUserKnown(this.playerName.trim())
-      }, 500)
+      // 1) Escuchar entradas y salidas (login con Google, logout, otra pestaña)
+      this.dejarDeEscucharSesion = escucharCambiosDeSesion({
+        alEntrar: (sesion) => this.entrarConSesion(sesion),
+        alSalir: () => this.volverAlLogin()
+      })
+      // 2) CU-03: si ya había sesión guardada, entrar directo sin login
+      try {
+        const sesion = await obtenerSesion()
+        if (sesion) await this.entrarConSesion(sesion)
+        else if (!this.usuario) this.currentScreen = 'login'
+      } catch (error) {
+        console.error('No se pudo revisar la sesión:', error)
+        this.currentScreen = 'login'
+      }
     },
-    isUserKnown(playerName) {
-      // Verificar si el usuario tiene progreso guardado
-      const progressKey = `leo-perfecto-progress-${playerName}`
-      return localStorage.getItem(progressKey) !== null
+    async entrar() {
+      this.errorLogin = ''
+      this.cargandoLogin = true
+      try {
+        await entrarConGoogle() // el navegador se va a Google y vuelve
+      } catch (error) {
+        console.error('Error al entrar con Google:', error)
+        this.errorLogin = 'No se pudo abrir el inicio de sesión con Google. Intenta de nuevo.'
+        this.cargandoLogin = false
+      }
+    },
+    async entrarConSesion(sesion) {
+      // Supabase puede avisar SIGNED_IN más de una vez (al volver a la pestaña,
+      // o junto con la sesión guardada): si ya entró este usuario, no hacer nada.
+      // Sin esto, un alumno a mitad de juego volvería al menú.
+      if (this.usuario && this.usuario.id === sesion.user.id) return
+      this.usuario = sesion.user
+      this.perfil = await cargarPerfil(sesion.user.id)
+      // El nombre ya no se escribe: sale del perfil / cuenta de Google.
+      // Se sigue usando como llave del progreso en localStorage (PR-01/PR-02 lo llevan a la nube).
+      this.playerName = nombreVisible(this.perfil, sesion.user)
+      try {
+        localStorage.setItem('leo-perfecto-player', this.playerName) // los juegos lo leen como respaldo
+      } catch (error) {
+        console.warn('No se pudo guardar el nombre en localStorage:', error)
+      }
+      this.cargandoLogin = false
+      this.currentScreen = 'welcome'
+      this.goToWelcome() // mismo camino que antes tras "Comenzar": carga progreso y abre el menú
+    },
+    async salir() {
+      try {
+        await cerrarSesion()
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error)
+      }
+      this.volverAlLogin() // no esperar al aviso de Supabase para cambiar de pantalla
+    },
+    volverAlLogin() {
+      this.usuario = null
+      this.perfil = null
+      this.playerName = ''
+      this.userProgress = null
+      this.completedTexts = []
+      this.isReturningUser = false
+      this.showProgreso = false
+      this.cargandoLogin = false
+      this.currentScreen = 'login'
+    },
+    irAlPanelDocente() {
+      if (!this.esDocente) return
+      this.showProgreso = false
+      this.currentScreen = 'panelDocente'
     },
     loadUserProgress(playerName) {
       // Cargar progreso del usuario desde localStorage
@@ -321,7 +359,7 @@ export default {
       this.goToInstructions()
     },
     restartGame() {
-      this.currentScreen = 'intro'
+      this.currentScreen = 'login'
       this.playerName = ''
       this.currentTextId = 'text1'
       this.completedTexts = []
