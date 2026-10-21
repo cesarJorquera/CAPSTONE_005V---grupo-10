@@ -179,6 +179,8 @@
 <script>
 import { getAllTriviaPreguntas } from '../data/game4_trivia'
 import { createGameManager } from '../utils/gameManager'
+import { createGameProgressTracker } from '../utils/supabaseProgress'
+import { triviaQuestionAssessment } from '../utils/assessment'
 
 export default {
   name: 'PantGame4',
@@ -198,7 +200,9 @@ export default {
       respuestasCorrectas: 0,
       respuestasUsuario: {},
       mostrarResultados: false,
-      gameManager: null
+      gameManager: null,
+      progressTracker: null,
+      progressClosed: false
     }
   },
   computed: {
@@ -222,8 +226,24 @@ export default {
   mounted() {
     this.gameManager = createGameManager(this.playerName)
     this.preguntas = getAllTriviaPreguntas()
+    this.iniciarRegistroSesion()
+  },
+  beforeUnmount() {
+    if (this.progressTracker && !this.progressClosed) {
+      this.progressTracker.abandon().catch(error => {
+        console.error('❌ No se pudo registrar el abandono del Juego 4:', error)
+      })
+    }
   },
   methods: {
+    iniciarRegistroSesion() {
+      this.progressClosed = false
+      this.progressTracker = createGameProgressTracker({
+        gameId: 4,
+        contentId: 'trivia1',
+        totalQuestions: this.totalPreguntas
+      })
+    },
     seleccionarRespuesta(alternativaId) {
       if (this.respuestaSeleccionada !== null) return
       
@@ -241,6 +261,17 @@ export default {
       if (alternativaId === this.preguntaData.respuestaCorrecta) {
         this.respuestasCorrectas++
       }
+
+      const assessment = triviaQuestionAssessment(this.preguntaData.categoria)
+      this.progressTracker.record({
+        itemId: `trivia:${preguntaId}`,
+        assessmentType: assessment.type,
+        assessmentCode: assessment.code,
+        answer: { selected: alternativaId },
+        isCorrect: alternativaId === this.preguntaData.respuestaCorrecta
+      }).catch(error => {
+        console.error('❌ No se pudo guardar la respuesta del Juego 4:', error)
+      })
     },
     
     getClassAlternativa(alternativaId) {
@@ -290,15 +321,26 @@ export default {
       }
     },
     
-    finalizarTrivia() {
+    async finalizarTrivia() {
+      if (this.progressClosed || this.mostrarResultados) return
+
+      this.progressClosed = true
       // Guardar progreso en gameManager
       this.gameManager.saveGameResult({
         gameId: 4,
+        textId: 'trivia1',
         score: this.puntajeFinal,
         correctAnswers: this.respuestasCorrectas,
         totalQuestions: this.totalPreguntas,
         date: new Date().toISOString()
       })
+
+      try {
+        await this.progressTracker.complete()
+      } catch (error) {
+        this.progressClosed = false
+        console.error('❌ No se pudo cerrar la sesión del Juego 4:', error)
+      }
       
       this.mostrarResultados = true
     },
@@ -330,6 +372,7 @@ export default {
       this.respuestasCorrectas = 0
       this.respuestasUsuario = {}
       this.mostrarResultados = false
+      this.iniciarRegistroSesion()
     },
     
     cerrarJuego() {

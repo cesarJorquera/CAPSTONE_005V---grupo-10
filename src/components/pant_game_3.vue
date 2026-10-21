@@ -300,6 +300,8 @@
 import { game3Texts } from '@/data/game3_texts.js';
 import { createGameManager } from '@/utils/gameManager.js';
 import { emitter } from '@/utils/eventBus.js';
+import { createGameProgressTracker } from '@/utils/supabaseProgress.js';
+import { readingQuestionAssessment } from '@/utils/assessment.js';
 import PantInstruccionesGame3 from './pant_instrucciones_game3.vue';
 
 export default {
@@ -345,7 +347,9 @@ export default {
       // Control de textos
       textosJugados: [],
       hasNextText: true,
-      textosDisponibles: []
+      textosDisponibles: [],
+      progressTracker: null,
+      progressClosed: false
     };
   },
   computed: {
@@ -361,6 +365,11 @@ export default {
     // Limpiar timer si existe
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
+    }
+    if (this.progressTracker && !this.progressClosed) {
+      this.progressTracker.abandon().catch(error => {
+        console.error('❌ No se pudo registrar el abandono del Juego 3:', error);
+      });
     }
   },
   methods: {
@@ -384,8 +393,19 @@ export default {
         if (this.tiempoRestante <= 0) {
           clearInterval(this.timerInterval);
           this.juegoTerminado = true;
+          this.abandonarSesionActual();
         }
       }, 1000);
+    },
+
+    abandonarSesionActual() {
+      if (!this.progressTracker || this.progressClosed) return
+
+      this.progressClosed = true
+      this.progressTracker.abandon().catch(error => {
+        this.progressClosed = false
+        console.error('❌ No se pudo registrar el abandono del Juego 3:', error);
+      });
     },
     
     formatearTiempo(segundos) {
@@ -407,6 +427,13 @@ export default {
         const textoId = textosNoJugados[randomIndex];
         this.textoActual = game3Texts[textoId];
         this.hasNextText = textosNoJugados.length > 1;
+        this.progressClosed = false;
+        this.progressTracker = createGameProgressTracker({
+          gameId: 3,
+          contentId: textoId,
+          totalQuestions: 1,
+          mode: this.modoJuego
+        });
       } else {
         // No hay más textos, terminar
         this.juegoTerminado = true;
@@ -438,6 +465,20 @@ export default {
           respuestaCorrecta: this.textoActual.alternativas.find(a => a.correcta)?.texto
         });
       }
+
+      const assessment = readingQuestionAssessment(this.textoActual.habilidad);
+      this.progressTracker.record({
+        itemId: this.textoActual.id,
+        assessmentType: assessment.type,
+        assessmentCode: assessment.code,
+        answer: {
+          alternativeId: alternativa.id,
+          text: alternativa.texto
+        },
+        isCorrect: this.respuestaCorrecta
+      }).catch(error => {
+        console.error('❌ No se pudo guardar la respuesta del Juego 3:', error);
+      });
       
       // Guardar progreso
       this.guardarProgreso();
@@ -493,6 +534,12 @@ export default {
         });
         
         if (resultado.success) {
+          this.progressClosed = true;
+          this.progressTracker.complete().catch(error => {
+            this.progressClosed = false;
+            console.error('❌ No se pudo cerrar la sesión del Juego 3:', error);
+          });
+
           console.log('✅ Progreso guardado:', resultado.message);
         }
       } catch (error) {

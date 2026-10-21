@@ -8,6 +8,12 @@
       @go-panel-docente="irAlPanelDocente"
       @cerrar-sesion="salir"
     />
+    <div v-if="errorProgreso" class="max-w-4xl mx-auto px-4 pt-4">
+      <p class="rounded-xl border border-red-300 bg-red-50 p-4 text-red-800" role="alert">
+        No se pudo cargar tu progreso desde la nube. Tus datos no se han reemplazado.
+        Revisa tu conexión e intenta iniciar sesión nuevamente.
+      </p>
+    </div>
     <div v-if="showProgreso">
       <MiProgreso 
         ref="miProgresoComponent"
@@ -140,6 +146,8 @@ import {
   esDocente
 } from './utils/authService'
 import { getAllTextIds, getNextText } from './data/game1_texts'
+import { createGameManager } from './utils/gameManager'
+import { cargarProgresoNube } from './utils/supabaseProgress'
 
 export default {
   name: 'App',
@@ -166,8 +174,9 @@ export default {
       currentGame3TextId: 'comp1', // ID del texto actual en juego 3
       completedTexts: [], // IDs de textos completados
       showProgreso: false,
-      userProgress: null, // Progreso cargado desde localStorage
+      userProgress: null, // Progreso cargado desde Supabase
       isReturningUser: false, // Flag para usuarios que regresan
+      errorProgreso: false,
       // --- Cuentas y acceso (CU-01 a CU-04) ---
       supabaseConfigurado,
       usuario: null, // usuario de Supabase Auth (null = sin sesión)
@@ -240,7 +249,7 @@ export default {
       this.usuario = sesion.user
       this.perfil = await cargarPerfil(sesion.user.id)
       // El nombre ya no se escribe: sale del perfil / cuenta de Google.
-      // Se sigue usando como llave del progreso en localStorage (PR-01/PR-02 lo llevan a la nube).
+      // Se usa para mostrar el nombre; el progreso se identifica por el UUID de Auth.
       this.playerName = nombreVisible(this.perfil, sesion.user)
       try {
         localStorage.setItem('leo-perfecto-player', this.playerName) // los juegos lo leen como respaldo
@@ -249,7 +258,7 @@ export default {
       }
       this.cargandoLogin = false
       this.currentScreen = 'welcome'
-      this.goToWelcome() // mismo camino que antes tras "Comenzar": carga progreso y abre el menú
+      await this.goToWelcome() // carga el progreso asociado a la cuenta y abre el menú
     },
     async salir() {
       try {
@@ -264,6 +273,7 @@ export default {
       this.perfil = null
       this.playerName = ''
       this.userProgress = null
+      this.errorProgreso = false
       this.completedTexts = []
       this.isReturningUser = false
       this.showProgreso = false
@@ -275,33 +285,24 @@ export default {
       this.showProgreso = false
       this.currentScreen = 'panelDocente'
     },
-    loadUserProgress(playerName) {
-      // Cargar progreso del usuario desde localStorage
-      const progressKey = `leo-perfecto-progress-${playerName}`
-      const savedProgress = localStorage.getItem(progressKey)
-      
-      if (savedProgress) {
-        try {
-          this.userProgress = JSON.parse(savedProgress)
-          this.completedTexts = this.userProgress.map(p => p.textId)
-          this.isReturningUser = true
-          
-          // Determinar el siguiente texto disponible
-          const nextTextId = this.getNextAvailableText()
-          if (nextTextId) {
-            this.currentTextId = nextTextId
-          }
-          
-          return true // Usuario con progreso encontrado
-        } catch (error) {
-          console.error('Error loading user progress:', error)
-          this.userProgress = null
-          this.completedTexts = []
-          this.isReturningUser = false
-        }
+    async loadUserProgress(playerName) {
+      const progress = await cargarProgresoNube()
+      const gameManager = createGameManager(playerName)
+      const completedProgress = progress.filter(item => item.status === 'completed')
+      if (!gameManager.saveProgress(completedProgress)) {
+        throw new Error('No se pudo actualizar la copia local del progreso descargado.')
       }
-      
-      return false // Usuario nuevo o sin progreso
+
+      this.userProgress = progress
+      this.completedTexts = completedProgress
+        .filter(item => item.gameId === 1)
+        .map(item => item.textId)
+      this.isReturningUser = completedProgress.length > 0
+
+      const nextTextId = this.getNextAvailableText()
+      if (nextTextId) this.currentTextId = nextTextId
+
+      return this.isReturningUser
     },
     getNextAvailableText() {
       // Buscar el primer texto no completado
@@ -309,14 +310,16 @@ export default {
       const nextText = allTexts.find(textId => !this.completedTexts.includes(textId))
       return nextText || 'text1' // Si todos están completados, volver al primero
     },
-    goToWelcome() {
+    async goToWelcome() {
       if (this.playerName.trim()) {
-        // Cargar progreso del usuario
-        const hasProgress = this.loadUserProgress(this.playerName.trim())
-        
-        if (hasProgress && this.userProgress.length > 0) {
-          this.isReturningUser = true
-        } else {
+        this.errorProgreso = false
+        try {
+          await this.loadUserProgress(this.playerName.trim())
+        } catch (error) {
+          console.error('No se pudo cargar el progreso desde Supabase:', error)
+          this.errorProgreso = true
+          this.userProgress = []
+          this.completedTexts = []
           this.isReturningUser = false
         }
         

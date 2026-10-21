@@ -152,6 +152,8 @@ import { emitter } from '../utils/eventBus'
 import { getTextById } from '../data/game1_texts'
 import { getQuestionsByTextId } from '../data/quest_game_keyword'
 import { createGameManager } from '../utils/gameManager'
+import { createGameProgressTracker } from '../utils/supabaseProgress'
+import { keywordQuestionAssessment } from '../utils/assessment'
 
 // ============================================
 // COMPONENTE: Juego 1 - Preguntas sobre Palabras Clave
@@ -189,7 +191,9 @@ export default {
       audioContext: null,            // Contexto para reproducir sonidos
       erroresJuego: [],              // Array de errores cometidos
       hasNextText: false,            // Si hay siguiente texto disponible
-      nextTextId: null               // ID del siguiente texto
+      nextTextId: null,              // ID del siguiente texto
+      progressTracker: null,
+      progressClosed: false
     }
   },
   
@@ -246,6 +250,12 @@ export default {
   // ============================================
   // Se ejecuta cuando el componente se monta en el DOM
   mounted() {
+    this.progressTracker = createGameProgressTracker({
+      gameId: 1,
+      contentId: this.textId,
+      totalQuestions: this.questions.length
+    })
+
     // Guardar el nombre del jugador en localStorage
     this.savePlayerName();
     
@@ -254,6 +264,13 @@ export default {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     } catch (error) {
       console.warn('Audio no disponible en este navegador:', error);
+    }
+  },
+  beforeUnmount() {
+    if (this.progressTracker && !this.progressClosed) {
+      this.progressTracker.abandon().catch(error => {
+        console.error('❌ No se pudo registrar el abandono del Juego 1:', error)
+      })
     }
   },
   
@@ -302,6 +319,17 @@ export default {
           explanation: explicacion
         });
       }
+
+      const assessment = keywordQuestionAssessment(this.currentQuestion)
+      this.progressTracker.record({
+        itemId: `${this.textId}:q${this.currentQuestionIndex + 1}`,
+        assessmentType: assessment.type,
+        assessmentCode: assessment.code,
+        answer: { selected: answer },
+        isCorrect: answer === this.currentQuestion.correct
+      }).catch(error => {
+        console.error('❌ No se pudo guardar la respuesta del Juego 1:', error)
+      })
     },
     
     // Clases CSS para las opciones
@@ -395,6 +423,12 @@ export default {
         })
 
         if (resultado.success) {
+          this.progressClosed = true
+          this.progressTracker.complete().catch(error => {
+            this.progressClosed = false
+            console.error('❌ No se pudo cerrar la sesión del Juego 1:', error)
+          })
+
           console.log('✅ Progreso guardado exitosamente')
           console.log(resultado.mensaje)
           

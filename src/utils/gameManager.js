@@ -8,7 +8,6 @@
  */
 
 import { getTextById } from '../data/game1_texts'
-import { guardarSesionDeJuego } from './supabaseProgress'
 
 /**
  * Configuración de juegos disponibles por unidad
@@ -352,12 +351,6 @@ export class GameManager {
 
       // Guardar
       this.saveProgress(progreso)
-
-      // Keep local progress available immediately while persisting the same
-      // completed attempt for the authenticated student's account.
-      void guardarSesionDeJuego(nuevoIntento).catch(error => {
-        console.error('❌ No se pudo guardar el progreso en Supabase:', error)
-      })
 
       // Retornar resultado
       return {

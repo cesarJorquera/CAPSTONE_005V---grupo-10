@@ -249,6 +249,8 @@
 import mascota from './mascota.vue'
 import { createGameManager } from '../utils/gameManager'
 import { getGame2TextById } from '../data/game2_texts'
+import { createGameProgressTracker } from '../utils/supabaseProgress'
+import { wordSlotAssessment } from '../utils/assessment'
 
 export default {
   name: 'GameDragDrop',
@@ -288,6 +290,9 @@ export default {
       aciertos: 0,
       errores: 0,
       erroresJuego: [],       // Array de errores específicos
+      intentosPorEspacio: {},
+      progressTracker: null,
+      progressClosed: false,
       vidasMaximas: 4,
       pistaActiva: false,
       indicePista: null,
@@ -334,9 +339,24 @@ export default {
   mounted() {
     // Cargar datos del texto
     this.loadTextData()
+
+    if (this.hasValidData && this.totalEspacios > 0) {
+      this.progressTracker = createGameProgressTracker({
+        gameId: 2,
+        contentId: this.textId,
+        totalQuestions: this.totalEspacios
+      })
+    }
     
     // Inicializar AudioContext para sonidos
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  },
+  beforeUnmount() {
+    if (this.progressTracker && !this.progressClosed) {
+      this.progressTracker.abandon().catch(error => {
+        console.error('❌ No se pudo registrar el abandono del Juego 2:', error)
+      })
+    }
   },
   methods: {
     /**
@@ -414,6 +434,10 @@ export default {
       if (espacio.palabraColocada) return
       
       const palabra = this.palabraActual
+      const espacioIndex = this.espaciosTexto.indexOf(espacio)
+      const itemId = `${this.textId}:slot${espacioIndex + 1}`
+      const attemptNumber = (this.intentosPorEspacio[itemId] || 0) + 1
+      this.intentosPorEspacio[itemId] = attemptNumber
       // Solo es correcto si el id de la palabra es el correcto para ese espacio
       const esCorrecto = palabra.id === espacio.palabraCorrectaId
       
@@ -457,6 +481,22 @@ export default {
           this.mostrarVidasAgotadas = true
         }
       }
+
+      const assessment = wordSlotAssessment(espacio)
+      this.progressTracker.record({
+        itemId,
+        attemptNumber,
+        assessmentType: assessment.type,
+        assessmentCode: assessment.code,
+        answer: {
+          wordId: palabra.id,
+          word: palabra.texto,
+          wordType: palabra.tipo
+        },
+        isCorrect: esCorrecto
+      }).catch(error => {
+        console.error('❌ No se pudo guardar la respuesta del Juego 2:', error)
+      })
       
       this.pistaActiva = false
       this.indicePista = null
@@ -554,6 +594,12 @@ export default {
         })
 
         if (resultado.success) {
+          this.progressClosed = true
+          this.progressTracker.complete().catch(error => {
+            this.progressClosed = false
+            console.error('❌ No se pudo cerrar la sesión del Juego 2:', error)
+          })
+
           console.log('✅ Progreso Juego 2 guardado')
           console.log(resultado.mensaje)
           
