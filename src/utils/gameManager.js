@@ -8,6 +8,7 @@
  */
 
 import { getTextById } from '../data/game1_texts'
+import { guardarSesionDeJuego } from './supabaseProgress'
 
 /**
  * Configuración de juegos disponibles por unidad
@@ -293,6 +294,18 @@ export class GameManager {
    * @param {Object} intentoData - Datos del intento
    * @returns {Object} Resultado con métricas actualizadas
    */
+  saveGameResult(gameData) {
+    return this.registrarIntento({
+      textId: gameData.textId || 'trivia1',
+      gameId: gameData.gameId,
+      correctAnswers: gameData.correctAnswers,
+      totalQuestions: gameData.totalQuestions,
+      score: gameData.score,
+      timeSpent: gameData.timeSpent,
+      errores: gameData.errores || []
+    })
+  }
+
   registrarIntento(intentoData) {
     try {
       const {
@@ -339,6 +352,12 @@ export class GameManager {
 
       // Guardar
       this.saveProgress(progreso)
+
+      // Keep local progress available immediately while persisting the same
+      // completed attempt for the authenticated student's account.
+      void guardarSesionDeJuego(nuevoIntento).catch(error => {
+        console.error('❌ No se pudo guardar el progreso en Supabase:', error)
+      })
 
       // Retornar resultado
       return {
