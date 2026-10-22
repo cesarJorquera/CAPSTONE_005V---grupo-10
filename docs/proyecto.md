@@ -263,7 +263,10 @@ presentar evidencia suficiente.
   `userProgress`, `usuario`, `perfil`, indicadores y errores de carga.
   Métodos de autenticación: `iniciarAutenticacion`, `entrar`, `entrarConSesion`,
   `salir`, `volverAlLogin`, `irAlPanelDocente`. Métodos de progreso y
-  navegación: `loadUserProgress`, `getNextAvailableText`, `goToWelcome`,
+  navegación: `loadUserProgress`, `refrescarProgresoNube` (PR-05: vuelve a
+  descargar el progreso al abrir Mi Progreso, después de esperar las
+  escrituras pendientes; si falla conserva los datos anteriores),
+  `mostrarProgreso`, `getNextAvailableText`, `goToWelcome`,
   `goToInstructions`, `startGame`, `goToQuestions`, `handleGame1Continue`,
   `goToDragDropRules`, `goToDragDrop`, `handleTryNextText`, `restartGame`,
   `goToProgreso`, `closeProgreso`, `handleStartGame1` a `handleStartGame4`,
@@ -302,12 +305,24 @@ presentar evidencia suficiente.
     propias abiertas por más de 24 horas.
   - `cargarProgresoNube()` descarga sesiones y respuestas y las adapta al
     formato usado por el frontend, incluyendo lista de errores.
+  - `esperarEscriturasPendientes(tiempoMaximo)` (PR-05) espera las escrituras
+    en curso de todos los trackers (crear, responder, completar, abandonar),
+    con un tope de 10 s por defecto.
 - `src/utils/assessment.js`:
   - `toCode(value)` normaliza texto para formar códigos.
   - `keywordQuestionAssessment(question)` clasifica conceptos de Juego 1.
   - `wordSlotAssessment(slot)` clasifica espacios del Juego 2.
   - `readingQuestionAssessment(skill)` asigna código de habilidad lectora.
   - `triviaQuestionAssessment(category)` clasifica preguntas de trivia.
+- `src/utils/nivelComprension.js` (PR-05, funciones puras sin Supabase ni Vue):
+  - `catalogoHabilidades(textos)` agrupa los ítems de `game3_texts.js` por
+    habilidad; el código se obtiene con `readingQuestionAssessment`.
+  - `minimoCompetente(total)` ítems necesarios para Competente.
+  - `calcularNivelComprension(progreso, catalogo)` devuelve estado por
+    habilidad, nivel, siguiente nivel y mensaje. Un ítem cuenta como resuelto
+    si tiene al menos una respuesta correcta del Juego 3 en cualquier sesión.
+- `src/utils/nivelComprensionConfig.js`: umbrales, nombres de estados y
+  niveles, y mensajes del nivel de comprensión. Valores provisionales.
 - `src/utils/gameManager.js`: mantiene el sistema de progreso legado y la
   selección/estadísticas del dashboard local. `UNIDADES_CONFIG` define juegos
   disponibles por unidad. `GameManager` usa `playerName` para construir
@@ -371,10 +386,11 @@ presentar evidencia suficiente.
   `cerrarModalDiagnostico`, `seleccionarRespuestaEjercicio`,
   `verificarRespuestaEjercicio`, `cerrarModalEjercicio`.
 - `src/components/MiProgreso.vue`: dashboard del alumno existente, con props
-  `playerName`, `userProgress`, `isReturningUser`; mantiene estadísticas
-  locales, racha, fortalezas/debilidades y `gameManager`. Computed:
-  `nivel`, `nivelJugador`, `progresoTotal`, `emojiMotivacional`,
-  `efectividadSegura`, `mensajeMotivacional`. Métodos:
+  `playerName`, `userProgress`, `isReturningUser`, `actualizando`; mantiene
+  estadísticas locales, racha, fortalezas/debilidades y `gameManager`.
+  Computed: `nivelComprension` y `haJugadoComprension` (PR-05, desde la nube),
+  `progresoTotal`, `emojiMotivacional`, `efectividadSegura`,
+  `mensajeMotivacional`. Métodos: `claseEscalon`, `estiloEstado`,
   `loadPlayerData`, `resetearEstadisticas`, `calcularRachaDias`,
   `calcularFortalezasYDebilidades`, `getUnidadProgress`, `iniciarUnidad`,
   `handleIAAction`, `initAudio`, `playSound`. Es un dashboard de alumno, no el
@@ -424,9 +440,12 @@ npm run serve
 Scripts disponibles:
 
 ```powershell
-npm run lint
+npm run lint -- --no-fix   # sin --no-fix, vue-cli corrige archivos
 npm run build
+node scripts/probar-nivel-comprension.mjs   # pruebas del nivel (PR-05)
 ```
+
+No hay framework de tests; los scripts de `scripts/` usan `node:assert`.
 
 Para producción, configurar en Netlify las variables `VUE_APP_SUPABASE_URL`,
 `VUE_APP_SUPABASE_ANON_KEY` y, solo si se usa el asistente IA,
@@ -482,7 +501,7 @@ trabajo que no se implementó:
 | PR-02 | El progreso nuevo se descarga al restaurar/iniciar la sesión de la cuenta. El historial antiguo de `localStorage` no se importó. | Hecha para descarga nueva; migración histórica excluida. Commit `265c18d`. |
 | PR-03 | Ranking global eliminado del alcance. | Cancelada; sin commit. |
 | PR-04 | Alinear `MiProgreso.vue`, incluyendo sus métricas/logros/racha, con los datos persistidos en nube. Hoy parte de esa lógica sigue local. | Pendiente; no confundir con PR-02 ni con el dashboard docente. |
-| PR-05 | Puntaje compuesto originalmente asociado al ranking global. | Cancelada; sin commit. |
+| PR-05 | Puntaje compuesto del alumno "Nivel de comprensión lectora" calculado de varias variables (rendimiento por habilidad, dificultad superada, racha). La versión 1 usa solo rendimiento por habilidad del Juego 3: estados Descubriendo/Practicando/Competente/Dominado y niveles Explorador/Aprendiz/Lector/Maestro, calculados en el cliente; el nivel no baja. Umbrales y nombres provisionales. | v1 implementada, pendiente de validar con Jimena qué variables entran y cómo se nombran los niveles. Dificultad superada queda como siguiente paso; racha por decidir. Commits `3398fe8`, `1f11433`, `0a467fd`. |
 
 No se migraron los logros como registros independientes a Supabase. La UI
 existente muestra logros derivados de la lógica local. Las partidas sí permiten
