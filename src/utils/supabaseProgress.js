@@ -109,10 +109,12 @@ export function createGameProgressTracker({ gameId, contentId, totalQuestions, m
 }
 
 async function cerrarSesionesInterrumpidas(client) {
+  const staleBefore = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const { data: sessions, error: sessionsError } = await client
     .from('game_sessions')
     .select('id')
     .eq('status', 'in_progress')
+    .lt('started_at', staleBefore)
 
   if (sessionsError) throw sessionsError
   if (!sessions.length) return
