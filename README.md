@@ -9,7 +9,7 @@
 [![Netlify Status](https://img.shields.io/badge/Deployed%20on-Netlify-00c7b7.svg)](https://netlify.com/)
 [![License](https://img.shields.io/badge/License-Academic-blue.svg)](LICENSE)
 
-[Demo en Vivo](https://leo-perfecto.netlify.app) | [Documentación](./docs/README.md) | [Reportar Bug](https://github.com/cesarJorquera/leo-perfecto/issues)
+[Demo en Vivo](https://frabjous-mooncake-af96b6.netlify.app/) | [Documentación](./docs/proyecto.md) | [Reportar Bug](https://github.com/cesarJorquera/leo-perfecto/issues)
 
 </div>
 
@@ -19,7 +19,7 @@
 
 Leo Perfecto es una **plataforma educativa moderna** diseñada para mejorar la **comprensión lectora** de estudiantes mediante *** juegos interactivos progresivos** con sistema de progreso inteligente:
 
-### 🎮 Los 3 Juegos Progresivos
+### 🎮 Juegos actuales
 
 #### 1️⃣ Juego 1 - Identificación de Palabras Clave
 - Preguntas de opción múltiple sobre sustantivos, verbos, adjetivos y conectores
@@ -40,18 +40,22 @@ Leo Perfecto es una **plataforma educativa moderna** diseñada para mejorar la *
 - Pantalla de instrucciones interactiva con Leo
 - Explicaciones detalladas por cada respuesta
 
+#### 4️⃣ Juego 4 - Trivia de Fundamentos
+- Preguntas de selección múltiple sobre conceptos y estrategias lectoras
+- Clasificación técnica de preguntas para análisis posterior
+
 ### ✨ Características Principales
 
 - 🧠 **Sistema de progreso inteligente** - Selección automática de juegos según rendimiento
 - 🤖 **Mascota interactiva "Leo"** - Feedback contextual y sistema de ayuda progresiva
-- 📊 **Dashboard avanzado** - Métricas en tiempo real, 10 logros desbloqueables
-- 📈 **Análisis personalizado** - Fortalezas, debilidades y consejos específicos
+- 📊 **Progreso del alumno** - Vista de progreso existente; su alineación completa con datos de nube sigue pendiente
+- 📈 **Registro de actividad** - Supabase guarda partidas y respuestas asociadas a la cuenta
 - 🎯 **Sistema de niveles** - De Aprendiz a Maestro de la Lectura
 - 🔥 **Rachas de práctica** - Motivación mediante streaks diarios
 - 🎨 **Diseño profesional** - UI minimalista y moderna con Tailwind CSS
 - 🔊 **Feedback auditivo** - Sonidos con Web Audio API (sin librerías)
 - 📱 **100% Responsive** - Optimizado para móvil, tablet y desktop
-- 💾 **Persistencia local** - localStorage (preparado para migración a backend)
+- 💾 **Persistencia en la nube** - Supabase guarda sesiones y respuestas; parte de las métricas heredadas sigue usando localStorage
 
 ---
 
@@ -92,11 +96,8 @@ Genera carpeta `dist/` lista para desplegar en Netlify.
 
 ```
 leo-perfecto/
-├── docs/                       # 📚 Documentación
-│   ├── PROJECT_OVERVIEW.md     # Arquitectura completa
-│   ├── BEST_PRACTICES.md       # Evaluación y mejoras
-│   ├── AGREGAR_TEXTOS.md       # Cómo agregar contenido
-│   └── GUIA_DISENO_PROFESIONAL.md  # Guía de diseño
+├── docs/
+│   └── proyecto.md             # Guía canónica de producto, código y datos
 │
 ├── public/                     # Archivos estáticos
 ├── src/
@@ -115,15 +116,16 @@ leo-perfecto/
 │   │   ├── pant_instrucciones_game3.vue  # Instrucciones J3 ✨
 │   │   ├── pant_reglas_game1.vue   # Reglas del juego 1
 │   │   ├── pant_reglas_game2.vue   # Reglas del juego 2
-│   │   └── pant_texto_game1.vue    # Visor de textos J1
 │   ├── data/                 # Datos estáticos (JSON)
 │   │   ├── game1_texts.js    # 12 textos literarios
 │   │   ├── game2_texts.js    # 10 ejercicios clasificación ✨
 │   │   ├── game3_texts.js    # 30 textos comprensión ✨
-│   │   └── quest_game_keyword.js  # Preguntas J1
+│   │   ├── quest_game_keyword.js  # Preguntas J1
+│   │   └── game4_trivia.js   # Preguntas de trivia
 │   ├── utils/                # Utilidades
-│   │   ├── eventBus.js       # Event bus (mitt)
-│   │   └── gameManager.js    # Gestión inteligente de progreso ✨
+│   │   ├── authService.js    # Autenticación Google
+│   │   ├── supabaseProgress.js # Persistencia de partidas/respuestas
+│   │   └── gameManager.js    # Métricas heredadas y selección de juegos
 │   ├── App.vue               # Componente raíz
 │   └── main.js               # Punto de entrada
 │
@@ -136,7 +138,7 @@ leo-perfecto/
 
 ## 🎮 Características Actuales
 
-### ✅ Implementado (v1.2 - Noviembre 2024)
+### ✅ Funcionalidades actuales
 
 #### 🎯 Sistema de Juegos Completo
 - **Juego 1:** 12 textos literarios con preguntas de identificación y feedback educativo
@@ -145,16 +147,16 @@ leo-perfecto/
   - Modos: Práctica (sin límite) y Desafío (1:30 min con timer visual)
   - Pantalla de instrucciones interactiva con Leo
   - Explicaciones detalladas por cada respuesta
+- **Juego 4:** Trivia de fundamentos con preguntas clasificadas por categoría
 
 #### 📊 Sistema de Progreso Inteligente
 - **GameManager:** Selección inteligente de juegos (prioriza no completados)
-- **Persistencia:** localStorage con análisis por juego individual
+- **Persistencia:** sesiones y respuestas en Supabase asociadas a la cuenta autenticada
+- **Autenticación:** OAuth con Google mediante Supabase; la sesión puede restaurarse en el mismo navegador
+- **Estados de partida:** en curso, completada o abandonada
 - **Dashboard Completo:**
-  - Niveles dinámicos (Aprendiz → Maestro de la Lectura)
-  - Barra de progreso total del curso (32 juegos)
-  - Métricas: Juegos completados, efectividad, racha de días
-  - 10 logros desbloqueables (Primer Paso, Experto, Perfección, etc.)
-  - Análisis de fortalezas y debilidades con consejos personalizados
+  - La vista de progreso del alumno mantiene métricas heredadas y está pendiente de alinearse completamente con la nube
+  - Las habilidades/categorías almacenadas son etiquetas técnicas preliminares, no un modelo pedagógico validado
 
 #### 🤖 Mascota Interactiva "Leo"
 - Feedback contextual según rendimiento
@@ -175,12 +177,12 @@ leo-perfecto/
 - **Event Bus (mitt):** Comunicación entre componentes sin props drilling
 - **Código limpio:** Comentarios técnicos, estructura clara, manejo de errores
 
-### 🚧 En Desarrollo (v2.0 - Próximamente)
+### 📌 Pendiente / siguiente trabajo
 
-- **Backend REST:** Node.js + Express + PostgreSQL
-  - Autenticación JWT
-  - Sistema multi-usuario
-  - Rankings globales
+- **Dashboard docente:** cursos, acceso seguro a estudiantes e indicadores por definir con la profesora
+- **Modelo pedagógico de medición:** acordar habilidades y KPIs antes de presentar resultados como dominio
+- **Alineación de MiProgreso:** retirar dependencias heredadas de localStorage donde corresponda
+- **Contenido administrable:** decidir en una etapa posterior si textos deben cargarse desde un panel
 - **Vue Router:** Navegación SPA profesional con rutas protegidas
 - **Pinia Store:** Gestión centralizada de estado
 - **Testing:** 
@@ -195,7 +197,7 @@ leo-perfecto/
 - **Build Tool:** Vue CLI 5.0.0
 - **Event Bus:** Mitt 3.0.1 (comunicación entre componentes)
 - **Audio:** Web Audio API nativa (sin librerías externas)
-- **Persistencia:** localStorage (preparado para migración a backend)
+- **Persistencia:** Supabase (sesiones y respuestas); localStorage aún participa en funcionalidades heredadas
 - **Deploy:** Netlify (CI/CD automático desde GitHub)
 
 ---
@@ -204,10 +206,7 @@ leo-perfecto/
 
 | Documento | Descripción | Audiencia |
 |-----------|-------------|-----------|
-| [PROJECT_OVERVIEW.md](./docs/PROJECT_OVERVIEW.md) | Arquitectura completa del proyecto | Todos los desarrolladores |
-| [BEST_PRACTICES.md](./docs/BEST_PRACTICES.md) | Evaluación de código y mejoras recomendadas | Desarrolladores senior |
-| [AGREGAR_TEXTOS.md](./docs/AGREGAR_TEXTOS.md) | Guía para agregar contenido educativo | Creadores de contenido |
-| [GUIA_DISENO_PROFESIONAL.md](./docs/GUIA_DISENO_PROFESIONAL.md) | Guía de diseño y estilos | Diseñadores/Frontend |
+| [proyecto.md](./docs/proyecto.md) | Objetivos, estado actual, arquitectura, datos, archivos y guía de desarrollo | Equipo e IA de apoyo |
 
 ---
 
@@ -215,7 +214,7 @@ leo-perfecto/
 
 ### 📝 Para Agregar Contenido Educativo
 
-1. Lee la [Guía de Agregar Textos](./docs/AGREGAR_TEXTOS.md)
+1. Lee la [guía del proyecto](./docs/proyecto.md)
 2. Agrega textos en:
    - `src/data/game1_texts.js` (Juego 1: Identificación)
    - `src/data/game2_texts.js` (Juego 2: Clasificación)
@@ -227,8 +226,8 @@ leo-perfecto/
 ### 💻 Para Desarrolladores
 
 1. **Fork** el repositorio
-2. Lee [PROJECT_OVERVIEW.md](./docs/PROJECT_OVERVIEW.md) para entender la arquitectura
-3. Revisa [BEST_PRACTICES.md](./docs/BEST_PRACTICES.md) para seguir estándares
+2. Lee [docs/proyecto.md](./docs/proyecto.md) para entender la arquitectura y el estado actual
+3. Confirma las decisiones pendientes en Trello antes de ampliar el esquema o las métricas
 4. Crea una rama: `git checkout -b feature/nueva-funcionalidad`
 5. Commit siguiendo convenciones: `git commit -m "feat: descripción"`
 6. Push: `git push origin feature/nueva-funcionalidad`
@@ -249,7 +248,7 @@ leo-perfecto/
 
 - **Email:** ces.jorquera@duocuc.cl
 - **Repositorio:** [github.com/cesarJorquera/leo-perfecto](https://github.com/cesarJorquera/leo-perfecto)
-- **Demo en vivo:** [Netlify Deploy](https://leo-perfecto.netlify.app) *(actualizar URL)*
+- **Demo en vivo:** [Leo Perfecto en Netlify](https://frabjous-mooncake-af96b6.netlify.app/)
 
 ### 🐛 Reportar Bugs
 
