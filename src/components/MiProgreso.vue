@@ -228,27 +228,76 @@
 
       <!-- Tu Progreso - Diseño Mejorado y Motivador -->
       <div class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-3xl shadow-2xl p-6 md:p-10 mb-8 border-4 border-blue-300">
-        <!-- Header con Nivel del Jugador -->
-        <div class="flex items-center justify-between mb-6">
+        <!-- Header con Nivel de Comprensión Lectora (PR-05) -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div class="flex items-center gap-4">
-            <div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-4 shadow-xl transform hover:scale-105 transition-all">
-              <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <div class="flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-3 sm:p-4 shadow-xl transform hover:scale-105 transition-all">
+              <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M11.7 2.805a.75.75 0 01.6 0A60.65 60.65 0 0122.83 8.72a.75.75 0 01-.231 1.337 49.949 49.949 0 00-9.902 3.912l-.003.002-.34.18a.75.75 0 01-.707 0A50.009 50.009 0 007.5 12.174v-.224c0-.131.067-.248.172-.311a54.614 54.614 0 014.653-2.52.75.75 0 00-.65-1.352 56.129 56.129 0 00-4.78 2.589 1.858 1.858 0 00-.859 1.228 49.803 49.803 0 00-4.634-1.527.75.75 0 01-.231-1.337A60.653 60.653 0 0111.7 2.805z" />
                 <path d="M13.06 15.473a48.45 48.45 0 017.666-3.282c.134 1.414.22 2.843.255 4.285a.75.75 0 01-.46.71 47.878 47.878 0 00-8.105 4.342.75.75 0 01-.832 0 47.877 47.877 0 00-8.104-4.342.75.75 0 01-.461-.71c.035-1.442.121-2.87.255-4.286A48.4 48.4 0 016 13.18v1.27a1.5 1.5 0 00-.14 2.508c-.09.38-.222.753-.397 1.11.452.213.901.434 1.346.661a6.729 6.729 0 00.551-1.608 1.5 1.5 0 00.14-2.67v-.645a48.549 48.549 0 013.44 1.668 2.25 2.25 0 002.12 0z" />
               </svg>
             </div>
             <div>
-              <h2 class="text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h2 class="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Tu Progreso
               </h2>
-              <p class="text-lg font-semibold text-gray-600 mt-1">{{ nivelJugador }}</p>
+              <p class="text-base md:text-lg font-semibold text-gray-600 mt-1">{{ nivelComprension.mensaje }}</p>
             </div>
           </div>
-          
+
           <!-- Badge de Nivel -->
-          <div class="bg-gradient-to-br from-orange-300 to-amber-400 rounded-2xl px-6 py-3 shadow-xl transform hover:rotate-3 transition-all border-2 border-orange-400">
-            <p class="text-sm text-orange-900 font-bold uppercase tracking-wide">Nivel</p>
-            <p class="text-5xl font-extrabold text-orange-800 drop-shadow-md">{{ nivel }}</p>
+          <div class="self-start sm:self-auto bg-gradient-to-br from-yellow-200 to-yellow-300 rounded-2xl px-6 py-3 shadow-xl border-2 border-yellow-400 text-center">
+            <p class="text-sm text-yellow-900 font-bold uppercase tracking-wide">Nivel</p>
+            <p class="text-3xl md:text-4xl font-extrabold text-yellow-900">{{ nivelComprension.nivel.nombre }}</p>
+          </div>
+        </div>
+
+        <!-- Escalera de niveles: dónde está el alumno y qué viene -->
+        <ol class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6" aria-label="Niveles de lectura">
+          <li
+            v-for="(nivelLectura, indice) in nivelesLectura"
+            :key="nivelLectura.id"
+            :aria-current="indice === nivelComprension.nivel.indice ? 'step' : null"
+            :class="['rounded-xl px-2 py-2 text-center text-sm font-bold border-2', claseEscalon(indice)]"
+          >
+            {{ nivelLectura.nombre }}
+          </li>
+        </ol>
+
+        <!-- Tus habilidades de lectura (PR-05) -->
+        <div class="bg-white rounded-2xl p-4 sm:p-6 shadow-lg border-2 border-green-200 mb-6">
+          <h3 class="text-xl md:text-2xl font-bold text-gray-800">Tus habilidades de lectura</h3>
+          <p v-if="!haJugadoComprension" class="text-sm text-gray-600 mt-1">
+            Juega Comprensión Lectora (Unidad 2) para empezar.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div
+              v-for="habilidad in nivelComprension.habilidades"
+              :key="habilidad.codigo"
+              :class="['rounded-xl p-4 border-2', estiloEstado(habilidad.estado.id).tarjeta]"
+            >
+              <p class="text-base font-bold text-gray-800 mb-2 break-words">{{ habilidad.nombre }}</p>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span :class="['text-xs font-bold px-3 py-1 rounded-full', estiloEstado(habilidad.estado.id).etiqueta]">
+                  {{ habilidad.estado.nombre }}
+                </span>
+                <span class="text-sm font-semibold text-gray-700">{{ habilidad.resueltos }} de {{ habilidad.total }}</span>
+              </div>
+              <div
+                class="w-full bg-gray-200 rounded-full h-3 overflow-hidden"
+                role="progressbar"
+                aria-valuemin="0"
+                :aria-valuemax="habilidad.total"
+                :aria-valuenow="habilidad.resueltos"
+                :aria-label="`${habilidad.nombre}: ${habilidad.resueltos} de ${habilidad.total} textos resueltos`"
+              >
+                <div
+                  :class="['h-3 rounded-full transition-all duration-700', estiloEstado(habilidad.estado.id).barra]"
+                  :style="{ width: habilidad.porcentaje + '%' }"
+                ></div>
+              </div>
+              <p class="text-sm text-gray-700 mt-2">{{ habilidad.mensaje }}</p>
+            </div>
           </div>
         </div>
 
@@ -385,7 +434,7 @@
               </p>
             </div>
 
-            <!-- Logro: Maestro -->
+            <!-- Logro: Constante (antes "Maestro"; se renombró para no confundirlo con el nivel Maestro) -->
             <div :class="[
               'rounded-xl p-5 text-center transition-all transform hover:scale-105 cursor-pointer border-2 flex-shrink-0 w-40 snap-center',
               juegosCompletados >= 10 
@@ -394,7 +443,7 @@
             ]">
               <div class="text-5xl mb-2">{{ juegosCompletados >= 10 ? '🎖️' : '🔒' }}</div>
               <p :class="['text-sm font-extrabold mb-1', juegosCompletados >= 10 ? 'text-gray-800' : 'text-gray-700']">
-                Maestro
+                Constante
               </p>
               <p :class="['text-xs font-semibold', juegosCompletados >= 10 ? 'text-gray-700' : 'text-gray-600']">
                 Completa 10 juegos
@@ -639,7 +688,18 @@
 // IMPORTACIONES
 // ============================================
 import { createGameManager } from '../utils/gameManager'
+import { calcularNivelComprension } from '../utils/nivelComprension'
+import { GAME_ID_COMPRENSION, NIVELES } from '../utils/nivelComprensionConfig'
 import AsistenteIA from './AsistenteIA.vue'
+
+// Colores por estado de habilidad. Sin rojo: ningún estado es "malo".
+// Solo colores de la paleta por defecto de Tailwind 2 (no existen orange/amber/emerald).
+const ESTILOS_ESTADO = {
+  descubriendo: { tarjeta: 'bg-blue-50 border-blue-200', etiqueta: 'bg-blue-100 text-blue-800', barra: 'bg-blue-400' },
+  practicando: { tarjeta: 'bg-indigo-50 border-indigo-200', etiqueta: 'bg-indigo-100 text-indigo-800', barra: 'bg-indigo-500' },
+  competente: { tarjeta: 'bg-green-50 border-green-300', etiqueta: 'bg-green-100 text-green-800', barra: 'bg-green-500' },
+  dominado: { tarjeta: 'bg-yellow-50 border-yellow-400', etiqueta: 'bg-yellow-200 text-yellow-900', barra: 'bg-yellow-400' }
+}
 
 export default {
   name: 'MiProgreso',
@@ -684,30 +744,21 @@ export default {
       audioContext: null,
       
       // Gestor de juegos
-      gameManager: null
+      gameManager: null,
+
+      // Niveles de lectura para la escalera (PR-05)
+      nivelesLectura: NIVELES
     };
   },
   computed: {
-    // Calcular nivel del jugador basado en juegos completados y efectividad
-    nivel() {
-      const puntosTotales = (this.juegosCompletados * 10) + (this.efectividadSegura / 10);
-      if (puntosTotales >= 50) return 5;
-      if (puntosTotales >= 35) return 4;
-      if (puntosTotales >= 20) return 3;
-      if (puntosTotales >= 10) return 2;
-      return 1;
+    // Nivel de comprensión lectora por habilidad (PR-05), calculado desde el progreso en la nube
+    nivelComprension() {
+      return calcularNivelComprension(this.userProgress);
     },
-    
-    // Título del nivel
-    nivelJugador() {
-      const niveles = {
-        1: '🌱 Aprendiz',
-        2: '📘 Estudiante',
-        3: '📚 Lector Avanzado',
-        4: '🎓 Experto',
-        5: '👑 Maestro de la Lectura'
-      };
-      return niveles[this.nivel] || '🌱 Aprendiz';
+
+    // ¿Hay al menos una partida de Comprensión Lectora?
+    haJugadoComprension() {
+      return (this.userProgress || []).some(sesion => sesion && sesion.gameId === GAME_ID_COMPRENSION);
     },
     
     // Calcular progreso total del curso (32 juegos en total: 12 texto + 10 drag + 10 comprensión)
@@ -790,6 +841,18 @@ export default {
   // MÉTODOS DEL COMPONENTE
   // ============================================
   methods: {
+    // Clases de cada escalón: alcanzado, actual o por venir
+    claseEscalon(indice) {
+      const actual = this.nivelComprension.nivel.indice;
+      if (indice === actual) return 'bg-yellow-300 border-yellow-400 text-yellow-900 shadow-md';
+      if (indice < actual) return 'bg-yellow-100 border-yellow-300 text-yellow-900';
+      return 'bg-white border-gray-200 text-gray-500';
+    },
+
+    estiloEstado(estadoId) {
+      return ESTILOS_ESTADO[estadoId] || ESTILOS_ESTADO.descubriendo;
+    },
+
     /**
      * Carga todos los datos del jugador desde localStorage
      * OPTIMIZADO: Usa el mejor puntaje de cada juego, no el promedio de intentos
@@ -821,7 +884,7 @@ export default {
           juegosCompletados: this.juegosCompletados,
           efectividad: this.efectividad,
           juegosPerfectos: this.juegosPerfectos,
-          nivel: this.nivel,
+          nivel: this.nivelComprension.nivel.id,
           racha: this.rachaActual
         })
       } catch (error) {
