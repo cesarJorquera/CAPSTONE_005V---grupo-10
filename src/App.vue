@@ -20,6 +20,7 @@
         :player-name="playerName"
         :user-progress="userProgress || []"
         :is-returning-user="isReturningUser"
+        :actualizando="actualizandoProgreso"
         @start-game1="handleStartGame1"
         @start-game2="handleStartGame2"
         @start-game3="handleStartGame3"
@@ -147,7 +148,7 @@ import {
 } from './utils/authService'
 import { getAllTextIds, getNextText } from './data/game1_texts'
 import { createGameManager } from './utils/gameManager'
-import { cargarProgresoNube } from './utils/supabaseProgress'
+import { cargarProgresoNube, esperarEscriturasPendientes } from './utils/supabaseProgress'
 
 export default {
   name: 'App',
@@ -177,6 +178,8 @@ export default {
       userProgress: null, // Progreso cargado desde Supabase
       isReturningUser: false, // Flag para usuarios que regresan
       errorProgreso: false,
+      actualizandoProgreso: false, // PR-05: refrescando el progreso al volver a Mi Progreso
+      refrescoProgresoId: 0, // solo se aplica el refresco más reciente
       // --- Cuentas y acceso (CU-01 a CU-04) ---
       supabaseConfigurado,
       usuario: null, // usuario de Supabase Auth (null = sin sesión)
@@ -324,7 +327,8 @@ export default {
         }
         
         // Ir directamente a MiProgreso en lugar de pant_bienvenida
-        this.goToProgreso()
+        // (sin refrescar: el progreso se acaba de descargar)
+        this.mostrarProgreso()
       }
     },
     showReturningUserWelcome() {
@@ -368,6 +372,10 @@ export default {
       this.completedTexts = []
     },
     goToProgreso() {
+      this.mostrarProgreso();
+      this.refrescarProgresoNube();
+    },
+    mostrarProgreso() {
       this.showProgreso = true;
       // Refrescar los datos del progreso después de que el componente se muestre
       this.$nextTick(() => {
@@ -375,6 +383,27 @@ export default {
           this.$refs.miProgresoComponent.loadPlayerData();
         }
       });
+    },
+    // PR-05: vuelve a descargar el progreso para que el nivel incluya la última partida.
+    // Espera a que el juego se desmonte y a que se guarden sus respuestas.
+    // Si falla, se mantienen los datos anteriores (el nivel no puede bajar por esto).
+    async refrescarProgresoNube() {
+      if (!this.usuario) return
+      const refrescoId = ++this.refrescoProgresoId
+      const usuarioId = this.usuario.id
+      this.actualizandoProgreso = true
+      try {
+        await this.$nextTick()
+        await esperarEscriturasPendientes()
+        const progress = await cargarProgresoNube()
+        const sigueVigente = refrescoId === this.refrescoProgresoId &&
+          this.usuario && this.usuario.id === usuarioId
+        if (sigueVigente) this.userProgress = progress
+      } catch (error) {
+        console.warn('No se pudo actualizar el progreso desde Supabase; se mantienen los datos anteriores:', error)
+      } finally {
+        if (refrescoId === this.refrescoProgresoId) this.actualizandoProgreso = false
+      }
     },
     closeProgreso() {
       this.showProgreso = false;

@@ -267,6 +267,9 @@
         <!-- Tus habilidades de lectura (PR-05) -->
         <div class="bg-white rounded-2xl p-4 sm:p-6 shadow-lg border-2 border-green-200 mb-6">
           <h3 class="text-xl md:text-2xl font-bold text-gray-800">Tus habilidades de lectura</h3>
+          <p class="text-sm text-gray-500 mt-1" role="status" aria-live="polite">
+            <span v-if="actualizando">Actualizando tu progreso…</span>
+          </p>
           <p v-if="!haJugadoComprension" class="text-sm text-gray-600 mt-1">
             Juega Comprensión Lectora (Unidad 2) para empezar.
           </p>
@@ -721,6 +724,11 @@ export default {
       default: () => []
     },
     isReturningUser: {
+      type: Boolean,
+      default: false
+    },
+    // PR-05: App.vue está descargando de nuevo el progreso
+    actualizando: {
       type: Boolean,
       default: false
     }

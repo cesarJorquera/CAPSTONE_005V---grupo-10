@@ -68,8 +68,27 @@ async function cerrarSesion(sessionId, status) {
   if (error) throw error
 }
 
+// Escrituras en curso de todos los juegos (PR-05). Permite esperar a que
+// terminen antes de volver a descargar el progreso.
+const escriturasEnCurso = new Set()
+
+function registrarEscritura(promise) {
+  escriturasEnCurso.add(promise)
+  const quitar = () => escriturasEnCurso.delete(promise)
+  promise.then(quitar, quitar)
+  return promise
+}
+
+// Espera las escrituras en curso (exitosas o no), con un tope para no
+// dejar la pantalla esperando si la conexión está lenta.
+export function esperarEscriturasPendientes(tiempoMaximo = 10000) {
+  const todas = Promise.allSettled(Array.from(escriturasEnCurso))
+  const tope = new Promise(resolve => setTimeout(resolve, tiempoMaximo))
+  return Promise.race([todas, tope])
+}
+
 export function createGameProgressTracker({ gameId, contentId, totalQuestions, mode }) {
-  const sessionPromise = crearSesion({ gameId, contentId, totalQuestions, mode })
+  const sessionPromise = registrarEscritura(crearSesion({ gameId, contentId, totalQuestions, mode }))
   sessionPromise.catch(error => {
     console.error('❌ No se pudo iniciar la sesión de juego en Supabase:', error)
   })
@@ -87,23 +106,27 @@ export function createGameProgressTracker({ gameId, contentId, totalQuestions, m
         const sessionId = await sessionPromise
         await guardarRespuesta(sessionId, response)
       })
-      return pendingWrites
+      return registrarEscritura(pendingWrites)
     },
 
-    async complete() {
-      if (closed) return
-      await pendingWrites
-      const sessionId = await sessionPromise
-      await cerrarSesion(sessionId, 'completed')
-      closed = true
+    complete() {
+      return registrarEscritura((async () => {
+        if (closed) return
+        await pendingWrites
+        const sessionId = await sessionPromise
+        await cerrarSesion(sessionId, 'completed')
+        closed = true
+      })())
     },
 
-    async abandon() {
-      if (closed) return
-      await pendingWrites
-      const sessionId = await sessionPromise
-      await cerrarSesion(sessionId, 'abandoned')
-      closed = true
+    abandon() {
+      return registrarEscritura((async () => {
+        if (closed) return
+        await pendingWrites
+        const sessionId = await sessionPromise
+        await cerrarSesion(sessionId, 'abandoned')
+        closed = true
+      })())
     }
   }
 }
