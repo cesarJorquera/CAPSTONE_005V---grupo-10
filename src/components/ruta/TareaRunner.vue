@@ -111,6 +111,9 @@
           <p v-if="mostrarSolucion" class="rounded-xl bg-white/80 p-3 text-sm leading-relaxed text-slate-800">
             La respuesta era: <strong class="font-black">{{ solucion }}</strong>
           </p>
+          <p v-if="paso.ejercicio.explicacion" class="rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm font-semibold leading-relaxed text-teal-950">
+            {{ paso.ejercicio.explicacion }}
+          </p>
           <p v-if="ultimo.correcta && ultimo.ortografia" class="rounded-xl bg-white/80 p-3 text-sm text-slate-800">
             Ojo con la tilde: se escribe <strong>{{ solucion }}</strong>.
           </p>
@@ -209,6 +212,9 @@
           </p>
           <p v-if="mostrarPista" class="text-gray-800">{{ paso.ejercicio.pista }}</p>
           <p v-if="mostrarSolucion" class="text-gray-800">La respuesta era: <strong>{{ solucion }}</strong></p>
+          <p v-if="paso.ejercicio.explicacion" class="rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm font-semibold leading-relaxed text-teal-950">
+            {{ paso.ejercicio.explicacion }}
+          </p>
           <p v-if="ultimo.correcta && ultimo.ortografia" class="text-gray-800">Ojo con la tilde: se escribe <strong>{{ solucion }}</strong>.</p>
           <template v-if="puedeVerTexto">
             <button type="button" class="underline text-gray-800" @click="verTexto = !verTexto">Ver en el texto</button>
