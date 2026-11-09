@@ -31,7 +31,22 @@
 
     <!-- LeoIA: la mascota Leo Perfecto con la estrella de cuatro puntas (símbolo universal de IA) -->
     <g v-else-if="tipo === 'leoia'">
-      <image :href="imagenLeo" x="-2" y="3" width="30" height="30" />
+      <!-- UI-09: Leo nuevo (sin brazos ni piernas en este tamaño). leoAnterior = true vuelve a la imagen PNG -->
+      <image v-if="leoAnterior" :href="imagenLeo" x="-2" y="3" width="30" height="30" />
+      <svg v-else x="1" y="2" width="22" height="30" viewBox="24 12 98 136">
+        <rect x="30" y="46" width="80" height="92" rx="11" fill="#3585dd" />
+        <rect x="37" y="50" width="69" height="74" rx="5" fill="#82c3fa" />
+        <rect x="37" y="50" width="9" height="74" fill="#66abee" />
+        <rect x="37" y="125" width="66" height="8" rx="4" fill="#a9d8fd" />
+        <path d="M45 127 H57 V146 L51 141 L45 146 Z" fill="#f2685c" />
+        <circle cx="61" cy="86" r="5.5" fill="#404450" />
+        <circle cx="83" cy="86" r="5.5" fill="#404450" />
+        <path d="M63 98 Q72 106 81 98" fill="none" stroke="#404450" stroke-width="4.5" stroke-linecap="round" />
+        <path d="M46 34 V47 Q70 55 94 47 V34 Z" fill="#3a3e49" />
+        <polygon points="70,16 114,30 70,44 26,30" fill="#464b57" />
+        <path d="M112 31 V52" stroke="#404450" stroke-width="4" stroke-linecap="round" />
+        <path d="M108 53 L106 66 Q112 69 118 66 L116 53 Z" fill="#404450" />
+      </svg>
       <g transform="translate(26.5 7)">
         <!-- Brillo y estrella comparten centro y se mueven juntos -->
         <g class="mp-destello">
@@ -75,7 +90,8 @@ export default {
     tipo: { type: String, required: true }
   },
   data() {
-    return { imagenLeo: require('@/assets/icons/libro-sin-fondo-feliz.png') }
+    // UI-09: leoAnterior = true vuelve a la imagen PNG de Leo
+    return { imagenLeo: require('@/assets/icons/libro-sin-fondo-feliz.png'), leoAnterior: false }
   }
 }
 </script>

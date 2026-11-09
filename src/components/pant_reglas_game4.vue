@@ -6,7 +6,10 @@
       <div class="flex flex-col items-center mb-8">
         <div class="relative mb-4">
           <div class="absolute inset-0 bg-gradient-to-br from-orange-300 to-amber-400 rounded-full blur-xl opacity-50"></div>
+          <LeoPersonaje class="relative z-10" estado="saluda" :tamano="110" animar-al-entrar etiqueta="Leo" />
+          <!-- UI-09: imagen anterior de Leo, se conserva para poder volver a ella
           <img src="@/assets/icons/libro-sin-fondo-feliz.png" alt="Leo" class="w-32 h-32 relative z-10 drop-shadow-2xl" />
+          -->
         </div>
         
         <h1 class="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 bg-clip-text text-transparent mb-4 text-center">
@@ -183,8 +186,11 @@
 </template>
 
 <script>
+// UI-09: Leo nuevo en lugar de la imagen PNG (la imagen anterior queda comentada en el template)
+import LeoPersonaje from './base/LeoPersonaje.vue'
 export default {
   name: 'ReglasGame4',
+  components: { LeoPersonaje },
   emits: ['continue']
 }
 </script>

@@ -93,7 +93,10 @@ import MenuPrincipal from './components/menu/MenuPrincipal.vue'
 // src/components/pant_bienvenida.vue sigue intacto por si se quiere reutilizar
 // (por ejemplo como ruta /bienvenida).
 // import pant_bienvenida from './components/pant_bienvenida.vue'
-import mascota from './components/mascota.vue'
+// UI-09: la mascota de los juegos usa el Leo nuevo (MascotaJuego.vue, misma lógica y métodos).
+// Para volver a la mascota anterior, usar la línea comentada de abajo en lugar de la nueva.
+// import mascota from './components/mascota.vue'
+import mascota from './components/MascotaJuego.vue'
 import { supabaseConfigurado } from './utils/supabaseClient'
 import {
   entrarConGoogle,
@@ -194,6 +197,13 @@ export default {
         case 'leoia':
           // UI-07: el nombre es solo para el saludo de Leo
           return { playerName: this.playerName }
+        case 'ajustes':
+          // UI-08: datos del perfil (solo lectura)
+          return {
+            playerName: this.playerName,
+            correo: this.usuario ? this.usuario.email || '' : '',
+            esDocente: this.esDocente
+          }
         case 'docente':
           return { nombreDocente: this.playerName }
         case 'docente-proyector':

@@ -2,7 +2,10 @@
   <div class="space-y-6">
     <div class="bg-white rounded-3xl shadow-xl p-8 md:p-12">
       <div class="flex justify-center mb-6">
+        <LeoPersonaje estado="saluda" :tamano="110" animar-al-entrar etiqueta="Leo" />
+        <!-- UI-09: imagen anterior de Leo, se conserva para poder volver a ella
         <img src="@/assets/icons/libro-sin-fondo-feliz.png" alt="icono Feliz" class="w-32 h-32" />
+        -->
       </div>
       
       <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 text-center">
@@ -38,7 +41,10 @@
 </template>
 
 <script>
+// UI-09: Leo nuevo en lugar de la imagen PNG (la imagen anterior queda comentada en el template)
+import LeoPersonaje from './base/LeoPersonaje.vue'
 export default {
-  name: 'InstructionsScreen'
+  name: 'InstructionsScreen',
+  components: { LeoPersonaje }
 }
 </script>

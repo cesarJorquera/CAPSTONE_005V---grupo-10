@@ -1,14 +1,15 @@
 /**
  * ============================================
- * PREFERENCIAS DE SONIDO Y ANIMACIÓN (UI-05, se completan en UI-08)
+ * PREFERENCIAS DE SONIDO Y ANIMACIÓN (UI-05; la pantalla para cambiarlas es Ajustes, UI-08)
  * ============================================
  * UI-05 deja estos interruptores conectados; la pantalla para cambiarlos llega
  * con UI-08 (Ajustes). Mientras tanto se respetan sus valores por defecto:
  * sonidos encendidos y animaciones encendidas.
  *
- * Dónde se guardan (localStorage o Supabase) se decide en UI-08 con el equipo;
- * por ahora van en localStorage y todo va en try/catch para que la app funcione
- * igual si el navegador no deja guardar.
+ * UI-08: se guardan solo en este dispositivo (localStorage), decisión del equipo.
+ * Si más adelante se pasan a Supabase, basta con cambiar leer() y escribir();
+ * el resto de la app usa solo las funciones exportadas. Todo va en try/catch
+ * para que la app funcione igual si el navegador no deja guardar.
  *
  * Las animaciones también se apagan si el sistema pide "reducir movimiento"
  * (prefers-reduced-motion). El CSS usa el atributo <html data-animaciones="off">,
@@ -68,4 +69,23 @@ export function aplicarAnimaciones() {
   } catch (error) {
     console.warn('No se pudo aplicar la preferencia de animaciones:', error)
   }
+}
+
+/**
+ * UI-08: lo que eligió la persona en Ajustes, sin mirar el sistema.
+ * (animacionesActivas() además se apaga si el dispositivo pide reducir movimiento.)
+ */
+export function animacionesGuardadas() {
+  return leer(CLAVE_ANIMACIONES) !== 'off'
+}
+
+/** UI-08: "Restablecer preferencias" vuelve a los valores de siempre (sonidos y animaciones encendidos). */
+export function restablecerPreferencias() {
+  try {
+    localStorage.removeItem(CLAVE_SONIDOS)
+    localStorage.removeItem(CLAVE_ANIMACIONES)
+  } catch (error) {
+    console.warn('No se pudieron restablecer las preferencias:', error)
+  }
+  aplicarAnimaciones()
 }

@@ -199,6 +199,9 @@
         >Abrir experiencia anterior</button>
       </template>
     </LeoPanelDetalle>
+
+    <!-- UI-09: logro grande de Leo (Unidad 1, un juego completo o Unidad 2), una sola vez cada uno -->
+    <LogroLeo v-if="logroActual" :logro="logroActual" @cerrar="cerrarLogro" />
   </div>
 </template>
 
@@ -216,6 +219,8 @@ import LeoEtiqueta from './base/LeoEtiqueta.vue'
 import LeoBarraProgreso from './base/LeoBarraProgreso.vue'
 import LeoBurbuja from './base/LeoBurbuja.vue'
 import LeoPanelDetalle from './base/LeoPanelDetalle.vue'
+import LogroLeo from './LogroLeo.vue' // UI-09
+import { siguienteLogro, marcarLogroVisto, textoLogro } from '../utils/logrosLeo' // UI-09
 import unidad1 from '../data/ruta/unidad1'
 import unidad2 from '../data/ruta/unidad2'
 import { estadoDeNodos } from './ruta/progresoRuta'
@@ -238,7 +243,7 @@ const CLAVE_ENTRADA = 'leo-perfecto-inicio-animado'
 export default {
   name: 'MiProgreso',
 
-  components: { LeoBoton, LeoTarjeta, LeoEtiqueta, LeoBarraProgreso, LeoBurbuja, LeoPanelDetalle },
+  components: { LeoBoton, LeoTarjeta, LeoEtiqueta, LeoBarraProgreso, LeoBurbuja, LeoPanelDetalle, LogroLeo },
   // components: { AsistenteIA }, // UI-04: ya no se usa aquí (ver PantallaLeoIA.vue)
   // ============================================
   // PROPS
@@ -276,7 +281,9 @@ export default {
       esAncho: false, // >= 768px: Leo con la burbuja arriba; si no, al lado
       consultaAncho: null,
       alCambiarAncho: null,
-      conEntrada: false // animación de entrada (una vez por sesión del navegador)
+      conEntrada: false, // animación de entrada (una vez por sesión del navegador)
+      progresoU2: 0,
+      logroActual: null // UI-09: logro que se está mostrando
     };
   },
   
@@ -437,7 +444,27 @@ export default {
       this.medirAncho()
       this.decidirEntrada()
       this.buscarPartida()
-      this.refrescarProgreso()
+      // UI-09: con el progreso ya actualizado, revisar si hay un logro nuevo de Leo
+      this.refrescarProgreso().then(() => this.revisarLogros())
+    },
+
+    // UI-09: muestra como máximo un logro por visita a Inicio (el siguiente, en la próxima)
+    revisarLogros() {
+      try {
+        if (this.logroActual) return
+        const progreso = [
+          ...(this.gameManager ? this.gameManager.loadProgress() : []),
+          ...(this.sesionesNube || this.userProgress || [])
+        ]
+        const id = siguienteLogro(this.playerName, { pasosRuta: this.pasosRuta, progreso })
+        if (id) this.logroActual = textoLogro(id, { totalPasos: this.pasosRuta.total })
+      } catch (error) {
+        console.warn('No se pudieron revisar los logros de Leo:', error)
+      }
+    },
+    cerrarLogro() {
+      if (this.logroActual) marcarLogroVisto(this.playerName, this.logroActual.id)
+      this.logroActual = null
     },
 
     // Leo va arriba de la burbuja desde 768px; en celular, al lado

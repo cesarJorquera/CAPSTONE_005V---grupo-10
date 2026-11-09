@@ -7,11 +7,14 @@
       <!-- Mascota Leo -->
       <div class="flex justify-center mb-6">
         <div class="relative">
-          <img 
-            src="@/assets/icons/libro-sin-fondo-feliz.png" 
-            alt="Leo - Mascota" 
+          <LeoPersonaje estado="saluda" :tamano="110" animar-al-entrar etiqueta="Leo" />
+          <!-- UI-09: imagen anterior de Leo, se conserva para poder volver a ella
+          <img
+            src="@/assets/icons/libro-sin-fondo-feliz.png"
+            alt="Leo - Mascota"
             class="w-32 h-32 animate-bounce-slow"
           />
+          -->
           <!-- Indicador de habla -->
           <div class="absolute -right-2 top-4 animate-ping">
             <div class="w-4 h-4 bg-blue-500 rounded-full opacity-75"></div>
@@ -195,8 +198,11 @@
 </template>
 
 <script>
+// UI-09: Leo nuevo en lugar de la imagen PNG (la imagen anterior queda comentada en el template)
+import LeoPersonaje from './base/LeoPersonaje.vue'
 export default {
   name: 'InstruccionesGame3',
+  components: { LeoPersonaje },
   data() {
     return {
       modoSeleccionado: null // 'practica' o 'desafio'

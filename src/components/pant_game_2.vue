@@ -255,7 +255,10 @@
 // ============================================
 // IMPORTACIONES
 // ============================================
-import mascota from './mascota.vue'
+// UI-09: la mascota de los juegos usa el Leo nuevo (MascotaJuego.vue, misma lógica y métodos).
+// Para volver a la mascota anterior, usar la línea comentada de abajo en lugar de la nueva.
+// import mascota from './mascota.vue'
+import mascota from './MascotaJuego.vue'
 import { createGameManager } from '../utils/gameManager'
 import { getGame2TextById } from '../data/game2_texts'
 import { createGameProgressTracker } from '../utils/supabaseProgress'

@@ -51,7 +51,10 @@
             
             <!-- Categoría -->
             <div class="flex items-center justify-center gap-2 mb-6">
+              <LeoPersonaje :tamano="40" decorativo />
+              <!-- UI-09: imagen anterior de Leo, se conserva para poder volver a ella
               <img src="@/assets/icons/libro-sin-fondo-feliz.png" alt="Leo" class="w-12 h-12" />
+              -->
               <div class="bg-gradient-to-r from-indigo-100 to-purple-100 px-6 py-2 rounded-full border-2 border-indigo-300">
                 <p class="text-sm font-bold text-indigo-700">
                   📚 {{ preguntaData.categoria }}
@@ -97,7 +100,10 @@
               <div v-if="respuestaSeleccionada !== null" class="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-6 border-2 border-yellow-300 shadow-lg mb-6">
                 <div class="flex items-start gap-4">
                   <div class="flex-shrink-0">
+                    <LeoPersonaje estado="explica" :tamano="56" animar-al-entrar etiqueta="Leo explica" />
+                    <!-- UI-09: imagen anterior de Leo, se conserva para poder volver a ella
                     <img src="@/assets/icons/libro-sin-fondo-feliz.png" alt="Leo explica" class="w-16 h-16" />
+                    -->
                   </div>
                   <div class="flex-1">
                     <h3 class="font-bold text-gray-800 text-lg mb-3 flex items-center gap-2">
@@ -191,10 +197,13 @@ import { createGameProgressTracker } from '../utils/supabaseProgress'
 import { guardarAvance, borrarAvance, tomarAvance } from '../utils/avanceJuego'
 import { registrarSalida, liberarSalida } from '../utils/confirmarSalida'
 import { triviaQuestionAssessment } from '../utils/assessment'
+// UI-09: Leo nuevo en lugar de la imagen PNG (la imagen anterior queda comentada en el template)
+import LeoPersonaje from './base/LeoPersonaje.vue'
 
 export default {
   name: 'PantGame4',
   components: {
+    LeoPersonaje
   },
   props: {
     playerName: {

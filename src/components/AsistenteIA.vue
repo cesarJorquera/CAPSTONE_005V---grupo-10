@@ -15,7 +15,8 @@
 
       <!-- Bienvenida de Leo -->
       <LeoTarjeta como="section" class="bienvenida" aria-label="Bienvenida de Leo" data-test="bienvenida">
-        <LeoBurbuja :mensaje="saludo" disposicion="lado" :tamano="esAncho ? 84 : 72" />
+        <!-- UI-09: Leo piensa mientras Leo IA prepara una respuesta -->
+        <LeoBurbuja :mensaje="saludo" disposicion="lado" :tamano="esAncho ? 84 : 72" :estado="leoEsperando ? 'piensa' : 'saluda'" />
       </LeoTarjeta>
 
       <!-- Sin API key: aviso neutro para el alumno. La instrucción técnica (.env.local)
@@ -121,7 +122,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="#14233b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6 L9 12 L15 18" /></svg>
           </button>
           <span class="chat__avatar" aria-hidden="true">
+            <!-- UI-09: Leo nuevo, sin brazos ni piernas en este tamaño -->
+            <LeoPersonaje :tamano="30" decorativo />
+            <!-- UI-09: imagen anterior, se conserva comentada para poder volver a ella
             <img src="@/assets/icons/libro-sin-fondo-feliz.png" alt="" />
+            -->
           </span>
           <div class="chat__titulos">
             <h2 id="chat-titulo" class="chat__titulo">Chat con Leo</h2>
@@ -277,7 +282,7 @@
               <h3 id="diag-nivel" class="bloque__nivel" data-test="diagnostico-nivel">{{ nombreNivel(diagnosticoIA.nivel) }}</h3>
             </div>
           </div>
-          <LeoBurbuja v-if="diagnosticoIA.mensaje_motivacional" :mensaje="diagnosticoIA.mensaje_motivacional" disposicion="lado" :tamano="60" />
+          <LeoBurbuja v-if="diagnosticoIA.mensaje_motivacional" :mensaje="diagnosticoIA.mensaje_motivacional" disposicion="lado" :tamano="60" estado="acierto" />
         </section>
 
         <section v-if="lista(diagnosticoIA.fortalezas).length" class="bloque bloque--verde" aria-labelledby="diag-fortalezas">
@@ -399,6 +404,7 @@ import LeoBoton from './base/LeoBoton.vue'
 import LeoEtiqueta from './base/LeoEtiqueta.vue'
 import LeoBarraProgreso from './base/LeoBarraProgreso.vue'
 import LeoPanelDetalle from './base/LeoPanelDetalle.vue'
+import LeoPersonaje from './base/LeoPersonaje.vue'
 import { primerNombre } from '../utils/nombre'
 
 // UI-07: íconos de trazo (mismo estilo que Inicio y Progreso)
@@ -419,7 +425,7 @@ const ANCHO_ESCRITORIO = '(min-width: 1024px)'
 
 export default {
   name: 'AsistenteIA',
-  components: { LeoTarjeta, LeoBurbuja, LeoBoton, LeoEtiqueta, LeoBarraProgreso, LeoPanelDetalle },
+  components: { LeoTarjeta, LeoBurbuja, LeoBoton, LeoEtiqueta, LeoBarraProgreso, LeoPanelDetalle, LeoPersonaje },
   props: {
     // UI-07: nombre del alumno para el saludo de Leo (lo entrega PantallaLeoIA)
     nombre: { type: String, default: '' }
@@ -459,6 +465,10 @@ export default {
     }
   },
   computed: {
+    // UI-09: Leo pone cara de "pensando" mientras Leo IA responde
+    leoEsperando() {
+      return this.cargandoIA || this.cargandoChat || this.cargandoDiagnostico
+    },
     saludo() {
       const nombre = primerNombre(this.nombre)
       const hola = nombre ? `Hola, ${nombre}.` : 'Hola.'

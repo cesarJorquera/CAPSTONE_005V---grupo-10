@@ -1,6 +1,17 @@
 <template>
   <div class="flex items-end gap-3" :class="{ 'leo--quieto': reducirMovimiento }">
-    <div :class="['leo', 'leo--' + estado, tamano === 'md' ? 'w-24' : 'w-16']" class="flex-shrink-0">
+    <!-- UI-09: Leo nuevo (mismo dibujo del PNG, con brazos y piernas). Su animación se reproduce
+         una vez al cambiar de estado. leoAnterior = true vuelve al dibujo anterior de abajo. -->
+    <LeoPersonaje
+      v-if="!leoAnterior"
+      class="flex-shrink-0"
+      :estado="estadoPersonaje"
+      :tamano="tamano === 'md' ? 96 : 64"
+      :quieto="reducirMovimiento"
+      :etiqueta="'Leo está ' + textoEstado"
+      animar-al-entrar
+    />
+    <div v-else :class="['leo', 'leo--' + estado, tamano === 'md' ? 'w-24' : 'w-16']" class="flex-shrink-0">
       <svg viewBox="0 0 130 140" role="img" :aria-label="'Leo está ' + textoEstado">
         <g class="leo-cuerpo">
           <!-- Libro -->
@@ -82,6 +93,8 @@
 </template>
 
 <script>
+import LeoPersonaje from '../base/LeoPersonaje.vue'
+
 const ESTADOS = ['saludando', 'pensando', 'explicando', 'feliz', 'yaCasi', 'celebrando', 'durmiendo', 'confundido']
 
 const TEXTOS = {
@@ -95,8 +108,25 @@ const TEXTOS = {
   confundido: 'confundido'
 }
 
+// UI-09: equivalencia entre los estados de la Ruta y los del Leo nuevo
+const ESTADO_PERSONAJE = {
+  saludando: 'saluda',
+  pensando: 'piensa',
+  explicando: 'explica',
+  feliz: 'acierto',
+  yaCasi: 'animo',
+  celebrando: 'celebra',
+  durmiendo: 'neutro',
+  confundido: 'piensa'
+}
+
 export default {
   name: 'LeoMascota',
+  components: { LeoPersonaje },
+  data() {
+    // UI-09: leoAnterior = true vuelve al dibujo anterior de Leo en la Ruta
+    return { leoAnterior: false }
+  },
   props: {
     estado: {
       type: String,
@@ -108,6 +138,9 @@ export default {
     reducirMovimiento: { type: Boolean, default: false }
   },
   computed: {
+    estadoPersonaje() {
+      return ESTADO_PERSONAJE[this.estado] || 'neutro'
+    },
     textoEstado() {
       return TEXTOS[this.estado]
     },
