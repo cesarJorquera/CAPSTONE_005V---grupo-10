@@ -1,13 +1,19 @@
 <template>
-  <!-- UI-06: Rework de Progreso. Misma familia visual que Inicio (UI-05): fondo plano,
-       tarjetas blancas, íconos SVG (sin emojis) y componentes base. Solo cambia lo visual;
-       el único cálculo que se tocó es el total del curso (ver `totalActividades`). -->
+  <!-- UI-06: progreso personal calculado desde las sesiones de Supabase. -->
   <div class="progreso" :class="{ 'progreso--entrada': conEntrada }">
 
     <header class="progreso__cabecera">
       <h1 class="progreso__titulo">Tu progreso</h1>
       <p class="progreso__bajada">{{ bajada }}</p>
     </header>
+    <p
+      v-if="errorCargaProgreso"
+      class="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-950"
+      role="alert"
+    >
+      {{ errorCargaProgreso }}
+      <button type="button" class="ml-2 underline" @click="loadPlayerData">Reintentar</button>
+    </p>
 
     <!-- Resumen + próximo logro -->
     <div class="progreso__fila">
@@ -192,11 +198,10 @@
 </template>
 
 <script>
-// UI-04: sección "Progreso". Aquí viven el bloque "Tu Progreso" y el Ranking Global, que antes estaban
-// al final de MiProgreso.vue (hoy solo Inicio). La lógica de estadísticas se movió tal cual desde allí.
-// UI-06: rework visual con los componentes base de UI-05. Las estadísticas (nivel, efectividad,
-// racha, fortalezas, áreas de mejora) se calculan igual que antes; solo cambió el total del curso.
-import { createGameManager, UNIDADES_CONFIG } from '../utils/gameManager'
+// UI-04: sección personal de progreso separada de Inicio.
+// Las métricas se derivan de sesiones y respuestas guardadas en Supabase.
+import { UNIDADES_CONFIG } from '../utils/gameManager'
+import { cargarProgresoNube } from '../utils/supabaseProgress'
 import RankingGlobal from './RankingGlobal.vue'
 import LeoBoton from './base/LeoBoton.vue'
 import LeoTarjeta from './base/LeoTarjeta.vue'
@@ -206,6 +211,7 @@ import LeoPanelDetalle from './base/LeoPanelDetalle.vue'
 import unidad1 from '../data/ruta/unidad1'
 import { estadoSesion } from '../router/estadoSesion'
 import { animacionesActivas } from '../utils/preferencias'
+import unidad2 from '../data/ruta/unidad2'
 
 // UI-06: íconos de trazo (24x24) para niveles, cifras y logros. Reemplazan a los emojis.
 const ICONOS = {
@@ -264,15 +270,13 @@ export default {
       juegosPerfectos: 0,
       tiempoPromedioRapido: false,
 
-      // Gestor de juegos
-      gameManager: null,
-
       // --- UI-06 ---
       iconos: ICONOS,
       logroAbierto: null,
       nuevos: [], // ids de logros desbloqueados que el alumno ve por primera vez
       brillando: null, // id del logro que hace el brillo al tocarlo
       temporizadorBrillo: null,
+      errorCargaProgreso: '',
       conEntrada: false,
       barrasLlenas: true, // con la animación de entrada, parten en 0 y se llenan una vez
       esAncho: false,
@@ -284,15 +288,11 @@ export default {
     // ============================================
     // UI-06: TOTAL DEL CURSO
     // ============================================
-    // Antes era un número fijo (32 = 12 + 10 + 10) que ya no calzaba con los juegos que existen
-    // ni contaba los pasos de la ruta. Ahora se cuenta desde los datos: todos los juegos
-    // configurados (UNIDADES_CONFIG: 53 hoy) + los pasos de la ruta de la Unidad 1 (8).
-    // `juegosCompletados` (getEstadisticas) ya cuenta los pasos de la ruta, porque la copia local
-    // del progreso se baja de Supabase con todas las partidas completadas.
+    // Cuenta las actividades disponibles en juegos y rutas de ambas unidades.
     totalActividades() {
       const juegos = new Set()
       Object.values(UNIDADES_CONFIG).forEach(u => (u.juegos || []).forEach(j => juegos.add(`${j.gameId}-${j.textId}`)))
-      return juegos.size + unidad1.nodos.length
+      return juegos.size + unidad1.nodos.length + Object.keys(unidad2.tareas).length
     },
     porcentajeCurso() {
       if (!this.totalActividades) return 0
@@ -470,15 +470,17 @@ export default {
     }
   },
 
-  mounted() {
-    try {
-      this.gameManager = createGameManager(this.playerName)
-      this.loadPlayerData()
-      // UI-06: animación de entrada, barras que se llenan y logros nuevos
-      this.prepararVista()
-    } catch (error) {
-      console.error('❌ Error al inicializar la sección Progreso:', error)
+  watch: {
+    userProgress(progreso) {
+      this.aplicarProgreso(progreso)
     }
+  },
+
+  mounted() {
+    this.aplicarProgreso(this.userProgress)
+    this.loadPlayerData()
+    // UI-06: animación de entrada, barras que se llenan y logros nuevos
+    this.prepararVista()
   },
 
   beforeUnmount() {
@@ -553,56 +555,52 @@ export default {
       this.$router.push({ name: 'inicio' })
     },
 
-    /**
-     * Carga todos los datos del jugador desde localStorage
-     * OPTIMIZADO: Usa el mejor puntaje de cada juego, no el promedio de intentos
-     */
-    loadPlayerData() {
+    async loadPlayerData() {
+      this.errorCargaProgreso = ''
       try {
-        if (!this.gameManager) {
-          console.warn('⚠️ GameManager no inicializado')
-          this.resetearEstadisticas()
-          return
-        }
-
-        // Obtener estadísticas mejoradas del GameManager
-        const stats = this.gameManager.getEstadisticas()
-        
-        // Validar y actualizar estado con valores seguros
-        this.juegosCompletados = Number.isFinite(stats.juegosCompletados) ? stats.juegosCompletados : 0
-        this.efectividad = Number.isFinite(stats.efectividad) ? stats.efectividad : 0
-        this.juegosPerfectos = Number.isFinite(stats.juegosPerfectos) ? stats.juegosPerfectos : 0
-        
-        // Calcular racha (días únicos con actividad)
-        const progreso = this.gameManager.loadProgress()
-        this.rachaActual = this.calcularRachaDias(progreso)
-
-        // Calcular fortalezas y debilidades con análisis mejorado
-        this.calcularFortalezasYDebilidades(progreso)
-        
-        console.log('✅ Datos del jugador cargados (optimizados):', {
-          juegosCompletados: this.juegosCompletados,
-          efectividad: this.efectividad,
-          juegosPerfectos: this.juegosPerfectos,
-          nivel: this.nivel,
-          racha: this.rachaActual
-        })
+        this.aplicarProgreso(await cargarProgresoNube())
       } catch (error) {
-        console.error('❌ Error al cargar datos del jugador:', error)
-        this.resetearEstadisticas()
+        console.error('No se pudo actualizar el progreso personal desde Supabase:', error)
+        this.errorCargaProgreso = 'No se pudo cargar el progreso desde la nube. Vuelve a intentarlo.'
       }
     },
+    aplicarProgreso(progreso) {
+      const sesiones = Array.isArray(progreso) ? progreso : []
+      const porActividad = new Map()
 
-    /**
-     * Resetea todas las estadísticas a valores por defecto
-     */
-    resetearEstadisticas() {
-      this.juegosCompletados = 0
-      this.efectividad = 0
-      this.rachaActual = 0
-      this.juegosPerfectos = 0
-      this.fortalezas = []
-      this.debilidades = []
+      sesiones
+        .filter(sesion => sesion && sesion.status === 'completed' && Number(sesion.answeredCount) > 0 && sesion.score != null)
+        .forEach(sesion => {
+          const puntaje = Number(sesion.score)
+          if (!Number.isFinite(puntaje)) return
+          const clave = Number(sesion.gameId) + ':' + sesion.textId
+          const anterior = porActividad.get(clave)
+          if (!anterior || puntaje > anterior.score) {
+            porActividad.set(clave, {
+              gameId: Number(sesion.gameId),
+              textId: sesion.textId,
+              score: puntaje,
+              date: sesion.date
+            })
+          }
+        })
+
+      const actividades = [...porActividad.values()].sort((a, b) =>
+        new Date(a.date || 0) - new Date(b.date || 0)
+      )
+      this.juegosCompletados = actividades.length
+      this.juegosPerfectos = actividades.filter(actividad => actividad.score === 100).length
+      this.efectividad = actividades.length
+        ? Math.round(actividades.reduce((total, actividad) => total + actividad.score, 0) / actividades.length)
+        : 0
+
+      const respuestas = sesiones.flatMap(sesion =>
+        (sesion.respuestas || [])
+          .filter(respuesta => respuesta.answered_at)
+          .map(respuesta => ({ date: respuesta.answered_at }))
+      )
+      this.rachaActual = this.calcularRachaDias(respuestas)
+      this.calcularFortalezasYDebilidades(actividades)
     },
 
     /**
@@ -613,16 +611,24 @@ export default {
     calcularRachaDias(progressArray) {
       if (progressArray.length === 0) return 0
 
-      // Obtener fechas únicas (sin hora) y ordenarlas
-      const fechasUnicas = [...new Set(progressArray.map(p => {
-        const fecha = new Date(p.date)
-        return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
-      }))].sort().reverse()
+      const formatoFecha = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Santiago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+      const diaChile = fecha => {
+        const partes = Object.fromEntries(formatoFecha.formatToParts(fecha).map(parte => [parte.type, parte.value]))
+        return `${partes.year}-${partes.month}-${partes.day}`
+      }
+      const fechasUnicas = [...new Set(progressArray
+        .map(p => new Date(p.date))
+        .filter(fecha => Number.isFinite(fecha.getTime()))
+        .map(diaChile))].sort().reverse()
 
       // Calcular racha consecutiva desde hoy
       let racha = 0
-      const hoy = new Date()
-      const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+      const hoyStr = diaChile(new Date())
       
       // Si jugó hoy, empieza racha
       if (fechasUnicas[0] === hoyStr) {
@@ -630,9 +636,11 @@ export default {
         
         // Contar días consecutivos hacia atrás
         for (let i = 1; i < fechasUnicas.length; i++) {
-          const fechaActual = new Date(fechasUnicas[i - 1])
-          const fechaSiguiente = new Date(fechasUnicas[i])
-          const diferenciaDias = Math.floor((fechaActual - fechaSiguiente) / (1000 * 60 * 60 * 24))
+          const [anioActual, mesActual, diaActual] = fechasUnicas[i - 1].split('-').map(Number)
+          const [anioSiguiente, mesSiguiente, diaSiguiente] = fechasUnicas[i].split('-').map(Number)
+          const fechaActual = Date.UTC(anioActual, mesActual - 1, diaActual)
+          const fechaSiguiente = Date.UTC(anioSiguiente, mesSiguiente - 1, diaSiguiente)
+          const diferenciaDias = (fechaActual - fechaSiguiente) / (1000 * 60 * 60 * 24)
           
           if (diferenciaDias === 1) {
             racha++

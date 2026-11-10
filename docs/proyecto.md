@@ -48,30 +48,45 @@ pedagógico validado con la profesora.
   Google, jugar y comprobar el registro en Supabase; abandonar una partida y
   comprobar su sesión y respuesta.
 
+### Dashboard conectado; ajuste de prueba docente pendiente de aplicar
+
+- Leo Dash consulta un snapshot agregado mediante la función
+  `leer_dashboard_docente`, muestra actividad, precisión inicial, respuestas
+  incorrectas, sesiones, habilidades por código de evaluación, respuestas
+  recientes y resumen individual de actividad/rutas/rachas/logros derivados.
+  La interfaz compara gráficamente precisión inicial y estados de sesión entre
+  Unidad 1 (lenguaje) y Unidad 2 (comprensión lectora), sin librería externa.
+  Una suscripción Realtime solicita un nuevo snapshot tras cambios en perfiles,
+  sesiones o respuestas; hay actualización manual si Realtime no está disponible.
+- La migración `005_teacher_dashboard.sql` habilita políticas de lectura para
+  docentes y la función RPC. Es un piloto global: una cuenta con `rol =
+  'docente'` puede consultar a todos los perfiles con `rol = 'alumno'` y su
+  propio perfil para probar sus actividades; no hay cursos ni matrículas para
+  limitar el alcance. Debe aplicarse y probarse en el proyecto Supabase
+  compartido. La primera versión de 005 está aplicada; tras el reporte de que
+  las métricas de alumnos ya cargan, queda reaplicar la definición actualizada
+  para incluir las respuestas de la propia cuenta docente en modo de prueba.
+- La precisión y los conteos de intentos se calculan desde las respuestas
+  persistidas. Las categorías pedagógicas siguen siendo etiquetas preliminares,
+  no una medición validada con la profesora. No se guardan logros como filas:
+  el resumen docente estima logros a partir de sesiones, respuestas y rachas.
+- La pantalla personal `PantallaProgreso.vue` calcula sus métricas con sesiones
+  y respuestas de Supabase; una racha cuenta días con respuestas. Si la carga
+  falla conserva el progreso recibido por la aplicación y muestra un error con
+  opción de reintento. Los logros siguen siendo derivados, no registros
+  independientes en la base.
+
 ### Parcial o pendiente; no presentarlo como terminado
 
-- Leo Dash incluye un prototipo visual de rendimiento lector con filtros por
-  periodo, unidad y estudiante, tarjetas de actividad, precisión, finalización,
-  habilidades y sesiones recientes. Usa datos ficticios locales: no consulta
-  Supabase ni representa estudiantes reales.
 - La pestaña de control de Leo Ideas conserva el acceso a la sesión en vivo.
-- El panel docente aún no consulta alumnos ni tiene un dashboard conectado.
 - No existen cursos, matrículas, relación docente-curso ni políticas para que
-  una docente consulte a sus estudiantes.
-- La vista de progreso del alumno (`MiProgreso.vue`) contiene métricas y lógica
-  heredadas de `localStorage`; aunque `App.vue` descarga datos de la nube,
-  todavía no se ha completado la migración de todas las métricas para que la
-  nube sea la única fuente de verdad.
-- Los logros mostrados por `MiProgreso.vue` se calculan/renderizan desde la
-  lógica local existente; no se guardan como filas independientes en Supabase.
-  Algunas métricas de uso pueden derivarse de sesiones y respuestas, pero la
-  persistencia de logros y su definición como indicadores de adopción no están
-  implementadas.
+  una docente consulte solo a sus estudiantes; la migración 005 concede acceso
+  global de piloto a las cuentas docentes.
+- `MiProgreso.vue` refresca desde la nube el avance de las unidades, pero su
+  aviso de logros puede combinar el progreso local existente con las sesiones
+  cloud. No se ha migrado el historial antiguo de `localStorage`.
 - No se importa automáticamente el historial antiguo guardado en
   `localStorage`. El progreso nuevo se asocia a la cuenta autenticada.
-- No se ha definido el dashboard de la profesora ni el modelo pedagógico final
-  de KPIs conectado a datos reales; el prototipo visual de Leo Dash usa datos
-  ficticios y no debe presentarse como telemetría real.
 - El catálogo actual etiqueta ítems como `basic_concept`, `reading_skill`,
   `text_type` u `other`; no es una validación académica de dominio.
 - La Unidad 2 tiene un prototipo de ruta con siete habilidades y cuatro
@@ -100,7 +115,7 @@ pedagógico validado con la profesora.
   docente solo está disponible para cuentas autenticadas con rol `docente`;
   desactiva el guardado y no modifica el avance del alumno. Mi Progreso muestra
   un porcentaje técnico basado en los minijuegos aprobados; no es todavía un
-  indicador pedagógico validado ni un dashboard docente.
+  indicador pedagógico validado.
 - No hay ranking global implementado como requisito de esta etapa.
 - No hay registro separado de visitas a la aplicación.
 - El contenido administrable por la profesora pertenece a una etapa posterior.
@@ -279,9 +294,9 @@ validación de permisos docente.
 
 Estos códigos permiten agrupar respuestas para análisis futuro, pero no
 definen por sí solos un KPI, una escala de dominio ni una interpretación
-diagnóstica. Antes del dashboard docente hay que acordar con la profesora qué
-habilidades medir, el significado de cada indicador, ventanas de tiempo y cómo
-presentar evidencia suficiente.
+diagnóstica. Antes de validar los indicadores finales con la profesora hay que
+acordar qué habilidades medir, el significado de cada indicador, ventanas de
+tiempo y cómo presentar evidencia suficiente.
 
 ## 8. Mapa del código fuente
 
@@ -511,16 +526,24 @@ trabajo que no se implementó:
 | BD-02 | Aplicar perfiles existentes y migraciones `002` (sesiones) y `003` (catálogo, respuestas, estados, trigger y RLS). No incluye migrar textos ni añadir campos personales/ranking. | Hecha según aplicación y prueba manual reportadas. Commits `5e0ab67`, `265c18d`. |
 | BD-03 | Seed de textos estáticos. No se hizo ni se requiere para la persistencia actual; reevaluar si se necesita contenido editable por docente. | Cancelada/fuera del sprint, no marcar como hecha. |
 | BD-04 | Contrato técnico: una partida en `game_sessions`, respuestas individuales en `game_responses`, estados completada/abandonada y clasificación preliminar. No equivale a modelo pedagógico validado. | Hecha para los juegos actuales. Commit `265c18d`. |
-| BD-05 | Definir cómo medir uso/aceptación con sesiones completadas/abandonadas y respuestas; acordar si los logros locales de `MiProgreso.vue` deben persistirse o bastan métricas derivadas. Agregar eventos de apertura u otra tabla solo si una pregunta del dashboard lo requiere. | Pendiente para el siguiente sprint; no migrada. |
+| BD-05 | Medir actividad con sesiones y respuestas, incluyendo precisión al primer intento, habilidades técnicas, actividad reciente y resúmenes derivados. No persiste logros ni visitas. | Primera versión aplicada y reportada operativa para alumnos. Reaplicar la versión actualizada de `005_teacher_dashboard.sql` para incluir la propia cuenta docente. |
 | PR-01 | Los juegos crean sesiones y registran respuestas en Supabase; completar o abandonar conserva el estado y respuestas existentes. | Hecha según prueba manual reportada. Commits `5e0ab67`, `265c18d`. |
 | PR-02 | El progreso nuevo se descarga al restaurar/iniciar la sesión de la cuenta. El historial antiguo de `localStorage` no se importó. | Hecha para descarga nueva; migración histórica excluida. Commit `265c18d`. |
 | PR-03 | Ranking global eliminado del alcance. | Cancelada; sin commit. |
-| PR-04 | Alinear `MiProgreso.vue`, incluyendo sus métricas/logros/racha, con los datos persistidos en nube. Hoy parte de esa lógica sigue local. | Pendiente; no confundir con PR-02 ni con el dashboard docente. |
+| PR-04 | Alinear el progreso personal y de rutas con datos de nube; logros derivados, sin tabla propia. | `PantallaProgreso.vue` usa sesiones y respuestas cloud; `MiProgreso.vue` refresca el avance de rutas, pero su aviso de logros aún puede combinar datos locales/cloud. Parcial. |
 | PR-05 | Puntaje compuesto originalmente asociado al ranking global. | Cancelada; sin commit. |
 
-No se migraron los logros como registros independientes a Supabase. La UI
-existente muestra logros derivados de la lógica local. Las partidas sí permiten
-contar actividad de juego y abandonos; no registran un ingreso sin actividad.
+No se migraron los logros como registros independientes a Supabase. La pantalla
+personal y el dashboard docente derivan algunos logros de sesiones/respuestas;
+el aviso de logros de Inicio aún incluye la lógica local existente. Las partidas
+permiten contar actividad y abandonos; no registran un ingreso sin actividad.
+
+La primera versión de `005_teacher_dashboard.sql` se aplicó al proyecto
+Supabase compartido. La versión actualizada debe ejecutarse de nuevo para que
+la RPC incluya la cuenta docente autenticada como cuenta de prueba. El usuario
+reportó que ya ve métricas de alumnos; falta confirmar la actividad propia y la
+recepción de cambios Realtime. El acceso es global hasta implementar cursos y
+matrículas.
 
 ### Texto de evidencia sugerido para BD-02 / BD-04 / PR-01
 
@@ -540,10 +563,12 @@ Para cada tarjeta terminada, mantener el hilo de evidencia:
 3. Funcionalidad: demostración en la aplicación o consulta técnica verificable.
 
 En el review, mostrar login, registrar una partida, mostrar las respuestas y
-demostrar el abandono. Distinguir lo terminado (persistencia de sesiones y
-respuestas) de lo pendiente (alinear `MiProgreso`, definir KPIs pedagógicos,
-dashboard docente, cursos/inscripciones y permisos). Una tarjeta configurada o
-un commit por sí solos no prueban que una función esté terminada.
+demostrar el abandono. Distinguir el código del dashboard de su despliegue:
+la versión actualizada de `005_teacher_dashboard.sql` requiere reaplicación y
+prueba en Supabase.
+También faltan validar KPIs pedagógicos, limitar acceso por cursos/matrículas y
+terminar de alinear los logros locales. Una tarjeta configurada o un commit por
+sí solos no prueban que una función esté terminada.
 
 ## 13. Guía de contexto para otra IA
 
@@ -555,9 +580,10 @@ Al pedir cambios, indicar:
    datos de estudiantes.
 3. Mantener estables `games.id`, `assessment_type` y códigos ya persistidos, o
    proponer migración explícita si cambian.
-4. No afirmar que existe dashboard docente, acceso por cursos, KPIs
-   pedagógicos definitivos, migración del progreso local o validación segura
-   del puntaje: no están terminados.
+4. No afirmar que el dashboard está operativo en Supabase hasta aplicar y
+   probar `005_teacher_dashboard.sql`; tampoco afirmar que existen acceso por
+   cursos, KPIs pedagógicos definitivos, migración total del progreso local o
+   validación segura del puntaje.
 5. Preservar RLS; validar acceso con cuenta propia y ajena antes de abrir
    permisos. La anon key es pública; `service_role` nunca va al frontend.
 6. Mantener contenido estático en `src/data/` salvo que una historia aprobada
