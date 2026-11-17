@@ -8,14 +8,23 @@ function clienteSupabase() {
 }
 
 export async function cargarDatosDashboardDocente(periodoDias) {
-  const { data, error } = await clienteSupabase().rpc('leer_dashboard_docente', {
-    p_dias: periodoDias
-  })
-  if (error) throw error
-  if (!data || !Array.isArray(data.students) || !Array.isArray(data.recentResponses)) {
+  const cliente = clienteSupabase()
+  const [resumen, actividad] = await Promise.all([
+    cliente.rpc('leer_dashboard_docente', { p_dias: periodoDias }),
+    cliente.rpc('leer_actividad_diaria_docente', { p_dias: periodoDias })
+  ])
+  if (resumen.error) throw resumen.error
+  if (actividad.error) throw actividad.error
+  if (
+    !resumen.data ||
+    !Array.isArray(resumen.data.students) ||
+    !Array.isArray(resumen.data.recentResponses) ||
+    !actividad.data ||
+    !Array.isArray(actividad.data.dailyActivity)
+  ) {
     throw new Error('Supabase devolvió datos incompletos para Leo Dash.')
   }
-  return data
+  return { ...resumen.data, dailyActivity: actividad.data.dailyActivity }
 }
 
 export function escucharCambiosDashboardDocente(alCambio, alEstado) {
