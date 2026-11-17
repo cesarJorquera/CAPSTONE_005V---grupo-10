@@ -122,7 +122,10 @@
           <span class="icono" style="background: #e3f3ea">
             <svg viewBox="0 0 24 24" fill="none" stroke="#1f7a47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="iconos.estrella" /></svg>
           </span>
-          <h2 id="fortalezas-titulo" class="seccion__titulo">Tus fortalezas</h2>
+          <div>
+            <h2 id="fortalezas-titulo" class="seccion__titulo">Tus fortalezas</h2>
+            <p class="mt-1 text-sm text-leo-texto">Resumen general de precisión inicial y constancia; no evalúa una habilidad por separado.</p>
+          </div>
         </div>
         <ul v-if="fortalezas.length" class="analisis__lista">
           <li v-for="(f, i) in fortalezas" :key="i" class="analisis__item">
@@ -145,7 +148,10 @@
           <span class="icono" style="background: #fff3cf">
             <svg viewBox="0 0 24 24" fill="none" stroke="#b07a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="iconos.brote" /></svg>
           </span>
-          <h2 id="crecer-titulo" class="seccion__titulo">Para seguir creciendo</h2>
+          <div>
+            <h2 id="crecer-titulo" class="seccion__titulo">Para seguir creciendo</h2>
+            <p class="mt-1 text-sm text-leo-texto">Sugerencias generales a partir de tus respuestas, no un diagnóstico de habilidad.</p>
+          </div>
         </div>
         <ul v-if="debilidades.length" class="analisis__lista">
           <!-- Sin porcentajes aquí: el consejo dice qué hacer, sin marcar lo que falta -->
@@ -264,6 +270,7 @@ export default {
       // Estadísticas del jugador
       juegosCompletados: 0,
       efectividad: 0,
+      primerasRespuestas: 0,
       rachaActual: 0,
       fortalezas: [],
       debilidades: [],
@@ -318,10 +325,10 @@ export default {
         : 'Aquí verás cómo avanzas. Tu primer paso está a un toque.'
     },
     cifras() {
-      const hay = this.juegosCompletados > 0
+      const hay = this.primerasRespuestas > 0
       return [
         { id: 'actividades', valor: String(this.juegosCompletados), nombre: 'Actividades completadas', nota: 'Juegos y pasos de tu ruta', icono: ICONOS.check, ...COLOR.azul },
-        { id: 'efectividad', valor: hay ? `${this.efectividadSegura}%` : '—', nombre: 'Efectividad', nota: hay ? 'Respuestas correctas' : 'Aparece tras tu primera actividad', icono: ICONOS.diana, ...COLOR.verde },
+        { id: 'efectividad', valor: hay ? `${this.efectividadSegura}%` : '—', nombre: 'Precisión al primer intento', nota: hay ? `${this.primerasRespuestas} primeras respuestas` : 'Aparece tras tu primera respuesta', icono: ICONOS.diana, ...COLOR.verde },
         { id: 'racha', valor: hay ? String(this.rachaActual) : '—', nombre: 'Días seguidos', nota: 'Practica a tu ritmo', icono: ICONOS.calendario, ...COLOR.ambar }
       ]
     },
@@ -337,8 +344,8 @@ export default {
         { id: 'camino', nombre: 'En Camino', desc: 'Completa 3 actividades', icono: ICONOS.sube, color: 'azul', valor: n, meta: 3, unidad: 'actividades' },
         { id: 'persistente', nombre: 'Persistente', desc: 'Completa 5 actividades', icono: ICONOS.capas, color: 'ambar', valor: n, meta: 5, unidad: 'actividades' },
         { id: 'maestro', nombre: 'Maestro', desc: 'Completa 10 actividades', icono: ICONOS.birrete, color: 'azul', valor: n, meta: 10, unidad: 'actividades' },
-        { id: 'experto', nombre: 'Experto', desc: '80% de efectividad', icono: ICONOS.diana, color: 'verde', valor: ef, meta: 80, unidad: '%' },
-        { id: 'perfeccion', nombre: 'Perfección', desc: '95% de efectividad', icono: ICONOS.diamante, color: 'ambar', valor: ef, meta: 95, unidad: '%' },
+        { id: 'experto', nombre: 'Experto', desc: '80% de precisión al primer intento', icono: ICONOS.diana, color: 'verde', valor: ef, meta: 80, unidad: '%' },
+        { id: 'perfeccion', nombre: 'Perfección', desc: '95% de precisión al primer intento', icono: ICONOS.diamante, color: 'ambar', valor: ef, meta: 95, unidad: '%' },
         { id: 'racha3', nombre: 'Racha de Fuego', desc: 'Practica 3 días seguidos', icono: ICONOS.calendario, color: 'azul', valor: racha, meta: 3, unidad: 'días' },
         { id: 'velocista', nombre: 'Velocista', desc: 'Respuestas rápidas', icono: ICONOS.rayo, color: 'verde', valor: this.tiempoPromedioRapido ? 1 : 0, meta: null, unidad: '' },
         { id: 'sinerrores', nombre: 'Sin Errores', desc: '100% en una actividad', icono: ICONOS.check, color: 'ambar', valor: this.juegosPerfectos, meta: 1, unidad: 'actividades' },
@@ -376,7 +383,7 @@ export default {
       const elegido = lista.reduce((a, b) => (b.valor / b.meta > a.valor / a.meta ? b : a))
       const falta = elegido.meta - elegido.valor
       let texto
-      if (elegido.unidad === '%') texto = `Llega a ${elegido.meta}% de efectividad`
+      if (elegido.unidad === '%') texto = `Llega a ${elegido.meta}% de precisión inicial`
       else if (elegido.valor === 0 && elegido.meta === 1) texto = elegido.id === 'paso1' ? 'Completa tu primera actividad' : 'Haz una actividad sin errores'
       else texto = falta === 1 ? 'Te falta 1 actividad' : `Te faltan ${falta} actividades`
       return { ...elegido, falta: texto }
@@ -447,25 +454,24 @@ export default {
     
     // Mensaje motivacional dinámico según el progreso REAL
     mensajeMotivacional() {
-      // Mensajes basados en efectividad Y cantidad de juegos
       if (this.efectividad >= 95 && this.juegosCompletados >= 15) {
-        return '¡Excelente dominio! Tu comprensión lectora es sobresaliente.';
+        return '¡Excelente! Mantienes una precisión inicial sobresaliente.';
       } else if (this.efectividad >= 90 && this.juegosCompletados >= 10) {
-        return 'Muy buen nivel. Mantienes consistencia en tu desempeño.';
+        return 'Muy buen resultado. Acertaste en gran parte de tus primeras respuestas.';
       } else if (this.efectividad >= 80 && this.juegosCompletados >= 8) {
-        return 'Buen progreso. Estás desarrollando habilidades sólidas.';
+        return 'Tu precisión inicial es alta. Sigue practicando las distintas actividades.';
       } else if (this.efectividad >= 70 && this.juegosCompletados >= 5) {
-        return 'Vas por buen camino. Sigue practicando regularmente.';
+        return 'Vas por buen camino. Revisa tus errores y continúa practicando.';
       } else if (this.efectividad >= 60 && this.juegosCompletados >= 3) {
-        return 'Progreso visible. La constancia te ayudará a mejorar.';
+        return 'Cada actividad suma. Practica a tu ritmo y revisa tus respuestas.';
       } else if (this.juegosCompletados >= 5) {
-        return 'Has practicado varios ejercicios. Revisa tus errores para mejorar.';
+        return 'Has completado varias actividades. Revisa tus respuestas incorrectas.';
       } else if (this.juegosCompletados >= 2) {
-        return 'Primeros pasos completados. Continúa practicando para avanzar.';
+        return 'Ya completaste tus primeras actividades. Sigue practicando.';
       } else if (this.juegosCompletados === 1) {
-        return 'Primer ejercicio completado. Sigue practicando para mejorar.';
+        return 'Completaste tu primera actividad. Sigue practicando.';
       } else {
-        return 'Comienza tu práctica y desarrolla tus habilidades de lectura.';
+        return 'Comienza tu práctica y revisa tu precisión en las respuestas.';
       }
     }
   },
@@ -590,8 +596,16 @@ export default {
       )
       this.juegosCompletados = actividades.length
       this.juegosPerfectos = actividades.filter(actividad => actividad.score === 100).length
-      this.efectividad = actividades.length
-        ? Math.round(actividades.reduce((total, actividad) => total + actividad.score, 0) / actividades.length)
+
+      const primerasRespuestas = sesiones.flatMap(sesion =>
+        (sesion.respuestas || []).filter(respuesta =>
+          Number(respuesta.attempt_number || 1) === 1
+        )
+      )
+      this.primerasRespuestas = primerasRespuestas.length
+      const correctasIniciales = primerasRespuestas.filter(respuesta => respuesta.is_correct).length
+      this.efectividad = primerasRespuestas.length
+        ? Math.round((correctasIniciales / primerasRespuestas.length) * 100)
         : 0
 
       const respuestas = sesiones.flatMap(sesion =>
@@ -626,30 +640,27 @@ export default {
         .filter(fecha => Number.isFinite(fecha.getTime()))
         .map(diaChile))].sort().reverse()
 
-      // Calcular racha consecutiva desde hoy
-      let racha = 0
       const hoyStr = diaChile(new Date())
-      
-      // Si jugó hoy, empieza racha
-      if (fechasUnicas[0] === hoyStr) {
-        racha = 1
-        
-        // Contar días consecutivos hacia atrás
-        for (let i = 1; i < fechasUnicas.length; i++) {
-          const [anioActual, mesActual, diaActual] = fechasUnicas[i - 1].split('-').map(Number)
-          const [anioSiguiente, mesSiguiente, diaSiguiente] = fechasUnicas[i].split('-').map(Number)
-          const fechaActual = Date.UTC(anioActual, mesActual - 1, diaActual)
-          const fechaSiguiente = Date.UTC(anioSiguiente, mesSiguiente - 1, diaSiguiente)
-          const diferenciaDias = (fechaActual - fechaSiguiente) / (1000 * 60 * 60 * 24)
-          
-          if (diferenciaDias === 1) {
-            racha++
-          } else {
-            break // Racha rota
-          }
+
+      const [anioHoy, mesHoy, diaHoy] = hoyStr.split('-').map(Number)
+      const ayerStr = new Date(Date.UTC(anioHoy, mesHoy - 1, diaHoy) - 86400000).toISOString().slice(0, 10)
+      if (fechasUnicas[0] !== hoyStr && fechasUnicas[0] !== ayerStr) return 0
+
+      let racha = 1
+      for (let i = 1; i < fechasUnicas.length; i++) {
+        const [anioActual, mesActual, diaActual] = fechasUnicas[i - 1].split('-').map(Number)
+        const [anioSiguiente, mesSiguiente, diaSiguiente] = fechasUnicas[i].split('-').map(Number)
+        const fechaActual = Date.UTC(anioActual, mesActual - 1, diaActual)
+        const fechaSiguiente = Date.UTC(anioSiguiente, mesSiguiente - 1, diaSiguiente)
+        const diferenciaDias = (fechaActual - fechaSiguiente) / 86400000
+
+        if (diferenciaDias === 1) {
+          racha++
+        } else {
+          break
         }
       }
-      
+
       return racha
     },
 
@@ -661,39 +672,19 @@ export default {
         return; // Sin datos, no hay análisis
       }
 
-      // Analizar por tipo de pregunta o categoría
-      const categorias = {
-        sustantivos: [],
-        verbos: [],
-        adjetivos: [],
-        conectores: []
-      };
-
-      // Agrupar puntajes por categoría (si tienes esa info guardada)
-      progressArray.forEach(p => {
-        if (p.categoria) {
-          if (!categorias[p.categoria]) categorias[p.categoria] = [];
-          categorias[p.categoria].push(p.score);
-        }
-      });
-
-      // Analizar rendimiento general
-      const puntajes = progressArray.map(p => p.score || 0);
-      const promedioGeneral = puntajes.reduce((a, b) => a + b, 0) / puntajes.length;
+      const promedioGeneral = this.efectividad;
       
       // FORTALEZAS
       if (promedioGeneral >= 90) {
         this.fortalezas.push({
-          emoji: '🌟',
-          titulo: 'Excelencia en Comprensión',
-          descripcion: 'Mantienes un rendimiento excepcional en todos los ejercicios',
+          titulo: 'Alta precisión inicial',
+          descripcion: 'Acertaste en la mayoría de tus primeras respuestas.',
           porcentaje: Math.round(promedioGeneral)
         });
       }
 
       if (this.juegosPerfectos >= 2) {
         this.fortalezas.push({
-          emoji: '💎',
           titulo: 'Perfeccionista',
           descripcion: `Has logrado ${this.juegosPerfectos} juegos con puntuación perfecta`,
           porcentaje: 100
@@ -702,33 +693,16 @@ export default {
 
       if (this.rachaActual >= 5) {
         this.fortalezas.push({
-          emoji: '�',
           titulo: 'Constancia Ejemplar',
           descripcion: `Racha de ${this.rachaActual} días practicando. ¡Increíble dedicación!`,
           porcentaje: Math.min(this.rachaActual * 10, 100)
         });
       }
 
-      // Analizar mejora a lo largo del tiempo
-      if (progressArray.length >= 3) {
-        const primerosTres = progressArray.slice(0, 3).map(p => p.score).reduce((a,b) => a+b) / 3;
-        const ultimosTres = progressArray.slice(-3).map(p => p.score).reduce((a,b) => a+b) / 3;
-        
-        if (ultimosTres > primerosTres + 10) {
-          this.fortalezas.push({
-            emoji: '�',
-            titulo: 'Progreso Acelerado',
-            descripcion: 'Has mejorado significativamente con la práctica',
-            porcentaje: Math.round(ultimosTres)
-          });
-        }
-      }
-
-      if (promedioGeneral >= 80 && this.juegosCompletados >= 5) {
+      if (promedioGeneral >= 80 && promedioGeneral < 90 && this.juegosCompletados >= 5) {
         this.fortalezas.push({
-          emoji: '🎯',
-          titulo: 'Dominio Consistente',
-          descripcion: 'Mantienes un alto rendimiento en múltiples ejercicios',
+          titulo: 'Buena precisión inicial',
+          descripcion: 'Has acertado en la mayoría de tus primeras respuestas.',
           porcentaje: Math.round(promedioGeneral)
         });
       }
@@ -736,29 +710,11 @@ export default {
       // DEBILIDADES / ÁREAS DE MEJORA
       if (promedioGeneral < 70 && progressArray.length >= 2) {
         this.debilidades.push({
-          emoji: '📚',
-          titulo: 'Comprensión en Desarrollo',
-          descripcion: 'Continúa practicando para fortalecer tu comprensión lectora',
+          titulo: 'Respuestas por revisar',
+          descripcion: 'Tus primeras respuestas muestran espacio para practicar.',
           porcentaje: Math.round(promedioGeneral),
-          consejo: 'Lee cada texto 2 veces'
+          consejo: 'Revisa la explicación después de cada respuesta.'
         });
-      }
-
-      // Detectar inconsistencia en resultados
-      if (progressArray.length >= 3) {
-        const desviacion = Math.sqrt(
-          puntajes.map(x => Math.pow(x - promedioGeneral, 2)).reduce((a,b) => a+b) / puntajes.length
-        );
-        
-        if (desviacion > 25) {
-          this.debilidades.push({
-            emoji: '⚡',
-            titulo: 'Resultados Variables',
-            descripcion: 'Tu rendimiento varía entre ejercicios',
-            porcentaje: Math.round(promedioGeneral),
-            consejo: 'Mantén concentración constante'
-          });
-        }
       }
 
       if (this.rachaActual < 2 && this.juegosCompletados >= 2) {
@@ -777,9 +733,8 @@ export default {
       
       if (promedioReciente < 60 && progressArray.length >= 3) {
         this.debilidades.push({
-          emoji: '🎲',
-          titulo: 'Desafíos Recientes',
-          descripcion: 'Tus últimos ejercicios presentaron dificultad',
+          titulo: 'Puntajes recientes por revisar',
+          descripcion: 'El promedio de tus tres actividades completadas más recientes es menor a 60%.',
           porcentaje: Math.round(promedioReciente),
           consejo: 'Revisa las reglas antes de empezar'
         });

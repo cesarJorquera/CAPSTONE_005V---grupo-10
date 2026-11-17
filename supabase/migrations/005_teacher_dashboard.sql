@@ -62,8 +62,7 @@ begin
   with alumnos as (
     select
       p.id,
-      coalesce(nullif(btrim(p.alias_publico), ''), nullif(btrim(p.full_name), ''), 'Estudiante') as nombre,
-      p.created_at,
+      row_number() over (order by p.created_at, p.id)::integer as numero,
       (p.rol = 'docente') as es_docente
     from public.profiles p
     where p.rol = 'alumno'
@@ -162,7 +161,7 @@ begin
     select
       r.id,
       r.user_id,
-      a.nombre,
+      a.numero,
       a.es_docente,
       r.game_id,
       r.unit_id,
@@ -183,10 +182,9 @@ begin
     'periodDays', p_dias,
     'students', coalesce((
       select jsonb_agg(jsonb_build_object(
-        'id', a.id,
-        'name', a.nombre,
+        'id', a.numero,
+        'name', 'Jugador ' || a.numero::text,
         'isTeacher', a.es_docente,
-        'createdAt', a.created_at,
         'totalSessions', coalesce(sr.total, 0),
         'completedSessions', coalesce(sr.completadas, 0),
         'abandonedSessions', coalesce(sr.abandonadas, 0),
@@ -198,7 +196,9 @@ begin
           select max(st.largo)
           from rachas st
           where st.user_id = a.id
-            and st.ultimo_dia = (now() at time zone 'America/Santiago')::date
+            and st.ultimo_dia between
+              (now() at time zone 'America/Santiago')::date - 1
+              and (now() at time zone 'America/Santiago')::date
         ), 0),
         'bestStreakDays', coalesce((
           select max(st.largo)
@@ -238,7 +238,7 @@ begin
           from habilidades_periodo hp
           where hp.user_id = a.id
         ), '[]'::jsonb)
-      ) order by a.nombre)
+      ) order by a.numero)
       from alumnos a
       left join sesiones_resumen sr on sr.user_id = a.id
       left join respuestas_resumen rr on rr.user_id = a.id
@@ -246,8 +246,8 @@ begin
     'recentResponses', coalesce((
       select jsonb_agg(jsonb_build_object(
         'id', er.id,
-        'userId', er.user_id,
-        'studentName', er.nombre,
+        'userId', er.numero,
+        'studentName', 'Jugador ' || er.numero::text,
         'isTeacher', er.es_docente,
         'gameId', er.game_id,
         'unitId', er.unit_id,

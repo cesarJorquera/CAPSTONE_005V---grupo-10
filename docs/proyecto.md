@@ -48,33 +48,43 @@ pedagógico validado con la profesora.
   Google, jugar y comprobar el registro en Supabase; abandonar una partida y
   comprobar su sesión y respuesta.
 
-### Dashboard conectado; ajuste de prueba docente pendiente de aplicar
+### Dashboard conectado; refinamientos locales pendientes de aplicar en Supabase
 
 - Leo Dash consulta un snapshot agregado mediante la función
   `leer_dashboard_docente`, muestra actividad, precisión inicial, respuestas
   incorrectas, sesiones, habilidades por código de evaluación, respuestas
   recientes y resumen individual de actividad/rutas/rachas/logros derivados.
-  La interfaz compara gráficamente precisión inicial y estados de sesión entre
+  Las respuestas recientes aparecen al final. Las barras por habilidad muestran
+  precisión inicial (correctas ÷ primeras respuestas), no porcentaje de retos
+  completados: por ejemplo, 4 correctas de 8 primeras respuestas equivalen a
+  50% de precisión. La interfaz compara precisión inicial y estados de sesión entre
   Unidad 1 (lenguaje) y Unidad 2 (comprensión lectora), sin librería externa.
   Una suscripción Realtime solicita un nuevo snapshot tras cambios en perfiles,
   sesiones o respuestas; hay actualización manual si Realtime no está disponible.
+- Los datos visibles del dashboard usan etiquetas `Jugador N`, ordenadas por
+  creación de perfil; no se envían nombres ni UUID de perfiles en el resultado
+  de la función. No se agregó una opción para editar alias.
 - La migración `005_teacher_dashboard.sql` habilita políticas de lectura para
   docentes y la función RPC. Es un piloto global: una cuenta con `rol =
   'docente'` puede consultar a todos los perfiles con `rol = 'alumno'` y su
   propio perfil para probar sus actividades; no hay cursos ni matrículas para
   limitar el alcance. Debe aplicarse y probarse en el proyecto Supabase
-  compartido. La primera versión de 005 está aplicada; tras el reporte de que
-  las métricas de alumnos ya cargan, queda reaplicar la definición actualizada
-  para incluir las respuestas de la propia cuenta docente en modo de prueba.
+  compartido. El archivo local de 005 incluye los cambios de seudónimos y
+  racha; hay que volver a ejecutarlo en el proyecto compartido para que el RPC
+  entregue esos datos.
 - La precisión y los conteos de intentos se calculan desde las respuestas
   persistidas. Las categorías pedagógicas siguen siendo etiquetas preliminares,
   no una medición validada con la profesora. No se guardan logros como filas:
   el resumen docente estima logros a partir de sesiones, respuestas y rachas.
-- La pantalla personal `PantallaProgreso.vue` calcula sus métricas con sesiones
-  y respuestas de Supabase; una racha cuenta días con respuestas. Si la carga
-  falla conserva el progreso recibido por la aplicación y muestra un error con
-  opción de reintento. Los logros siguen siendo derivados, no registros
-  independientes en la base.
+- `cargarProgresoNube()` filtra por el ID autenticado antes de cargar sesiones,
+  incluso para una cuenta docente, para no mezclar el progreso personal con el
+  acceso docente global. `PantallaProgreso.vue` calcula precisión global al
+  primer intento y una racha vigente si hubo actividad hoy o ayer; sus logros
+  siguen siendo derivados, no registros independientes en la base.
+- “Mi progreso” y “Progreso personal” del dashboard usan las mismas tablas,
+  pero no son una misma vista ni todos sus cálculos son idénticos: el dashboard
+  presenta hitos estimados y conteos de ruta. La pantalla personal incluye un
+  logro “Velocista” que aún no tiene una regla de tiempo implementada.
 
 ### Parcial o pendiente; no presentarlo como terminado
 
@@ -526,7 +536,7 @@ trabajo que no se implementó:
 | BD-02 | Aplicar perfiles existentes y migraciones `002` (sesiones) y `003` (catálogo, respuestas, estados, trigger y RLS). No incluye migrar textos ni añadir campos personales/ranking. | Hecha según aplicación y prueba manual reportadas. Commits `5e0ab67`, `265c18d`. |
 | BD-03 | Seed de textos estáticos. No se hizo ni se requiere para la persistencia actual; reevaluar si se necesita contenido editable por docente. | Cancelada/fuera del sprint, no marcar como hecha. |
 | BD-04 | Contrato técnico: una partida en `game_sessions`, respuestas individuales en `game_responses`, estados completada/abandonada y clasificación preliminar. No equivale a modelo pedagógico validado. | Hecha para los juegos actuales. Commit `265c18d`. |
-| BD-05 | Medir actividad con sesiones y respuestas, incluyendo precisión al primer intento, habilidades técnicas, actividad reciente y resúmenes derivados. No persiste logros ni visitas. | Primera versión aplicada y reportada operativa para alumnos. Reaplicar la versión actualizada de `005_teacher_dashboard.sql` para incluir la propia cuenta docente. |
+| BD-05 | Medir actividad con sesiones y respuestas, incluyendo precisión al primer intento, habilidades técnicas, actividad reciente y resúmenes derivados. No persiste logros ni visitas. | Primera versión aplicada y reportada operativa. Reaplicar `005_teacher_dashboard.sql` para las etiquetas anónimas y la racha corregida. |
 | PR-01 | Los juegos crean sesiones y registran respuestas en Supabase; completar o abandonar conserva el estado y respuestas existentes. | Hecha según prueba manual reportada. Commits `5e0ab67`, `265c18d`. |
 | PR-02 | El progreso nuevo se descarga al restaurar/iniciar la sesión de la cuenta. El historial antiguo de `localStorage` no se importó. | Hecha para descarga nueva; migración histórica excluida. Commit `265c18d`. |
 | PR-03 | Ranking global eliminado del alcance. | Cancelada; sin commit. |

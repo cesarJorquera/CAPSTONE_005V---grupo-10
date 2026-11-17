@@ -139,11 +139,12 @@ export function createGameProgressTracker({ gameId, contentId, totalQuestions, m
   }
 }
 
-async function cerrarSesionesInterrumpidas(client) {
+async function cerrarSesionesInterrumpidas(client, userId) {
   const staleBefore = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const { data: sessions, error: sessionsError } = await client
     .from('game_sessions')
     .select('id')
+    .eq('user_id', userId)
     .eq('status', 'in_progress')
     .lt('started_at', staleBefore)
 
@@ -167,11 +168,20 @@ async function cerrarSesionesInterrumpidas(client) {
 
 export async function cargarProgresoNube() {
   const client = requireSupabase()
-  await cerrarSesionesInterrumpidas(client)
+  const { data: authData, error: authError } = await client.auth.getUser()
+  if (authError) throw authError
+
+  const userId = authData.user?.id
+  if (!userId) {
+    throw new Error('No hay un usuario autenticado para cargar el progreso personal.')
+  }
+
+  await cerrarSesionesInterrumpidas(client, userId)
 
   const { data: sessions, error: sessionsError } = await client
     .from('game_sessions')
     .select('id, game_id, content_id, correct_answers, total_questions, score, answered_count, status, started_at, ended_at')
+    .eq('user_id', userId)
     .order('started_at', { ascending: true })
 
   if (sessionsError) throw sessionsError
@@ -180,7 +190,7 @@ export async function cargarProgresoNube() {
   const sessionIds = sessions.map(session => session.id)
   const { data: responses, error: responsesError } = await client
     .from('game_responses')
-    .select('session_id, item_id, assessment_type, assessment_code, answer, is_correct, answered_at')
+    .select('session_id, item_id, assessment_type, assessment_code, answer, is_correct, attempt_number, answered_at')
     .in('session_id', sessionIds)
     .order('answered_at', { ascending: true })
 

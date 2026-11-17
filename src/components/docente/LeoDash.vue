@@ -66,9 +66,9 @@
             </select>
           </label>
           <label class="col-span-2 text-xs font-bold text-leo-texto sm:col-span-1">
-            Cuenta
+            Jugador
             <select v-model="estudianteFiltro" class="leo-dash__select mt-1 block w-full">
-              <option value="todos">Todas las cuentas</option>
+              <option value="todos">Todos los jugadores</option>
               <option v-for="alumno in estudiantes" :key="alumno.id" :value="alumno.id">{{ nombreCuenta(alumno) }}</option>
             </select>
           </label>
@@ -80,7 +80,7 @@
       </p>
       <p v-else-if="cargando && !datos" class="mb-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-950" role="status">Cargando actividad real desde Supabase…</p>
       <div v-else class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
-        Acceso docente global: incluye a todos los alumnos. Tu cuenta también aparece para pruebas. Datos actualizados: {{ fechaActualizacion }}.
+        Acceso docente global: incluye a todos los alumnos. Sus nombres se muestran como Jugador N; tu cuenta también aparece para pruebas. Datos actualizados: {{ fechaActualizacion }}.
         <span v-if="estadoRealtime !== 'SUBSCRIBED'">La suscripción en vivo no está disponible; usa Actualizar para consultar los datos más recientes.</span>
       </div>
 
@@ -175,76 +175,49 @@
           <div><dt class="font-bold text-leo-tinta">Sesiones completadas</dt><dd>Porcentaje de partidas terminadas sobre todas las iniciadas en el periodo; las abandonadas y en curso no cuentan como terminadas.</dd></div>
         </dl>
         <p class="mt-3 border-t border-leo-linea pt-3 text-xs leading-relaxed text-leo-suave">
-          Las habilidades se agrupan con etiquetas técnicas del contenido y aún no son una evaluación pedagógica validada. Los logros de la tabla son estimaciones derivadas, no logros guardados como registros individuales.
+          Las habilidades se agrupan con etiquetas técnicas del contenido y aún no son una evaluación pedagógica validada. Los hitos de la tabla son estimaciones derivadas, no logros guardados como registros individuales.
         </p>
       </details>
 
-      <div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <section class="rounded-3xl border border-leo-linea bg-white p-5 shadow-sm sm:p-6" aria-labelledby="habilidades-titulo">
-          <div class="mb-5 flex items-start justify-between gap-3">
-            <div>
-              <h3 id="habilidades-titulo" class="text-lg font-black text-leo-tinta">Habilidades lectoras</h3>
-              <p class="mt-1 text-sm text-leo-texto">Precisión por habilidad en las respuestas del periodo.</p>
+      <section class="mt-4 rounded-3xl border border-leo-linea bg-white p-5 shadow-sm sm:p-6" aria-labelledby="habilidades-titulo">
+        <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 id="habilidades-titulo" class="text-lg font-black text-leo-tinta">Habilidades lectoras</h3>
+            <p class="mt-1 text-sm text-leo-texto">Precisión inicial: respuestas correctas ÷ primeras respuestas. No mide cuánto del reto se completó.</p>
+          </div>
+          <span class="rounded-full bg-leo-cielo px-3 py-1 text-xs font-extrabold text-leo-azul-osc">{{ nombreUnidadFiltro }}</span>
+        </div>
+        <div v-if="habilidades.length" class="space-y-4">
+          <div v-for="habilidad in habilidades" :key="habilidad.clave">
+            <div class="mb-1.5 flex items-center justify-between gap-3 text-sm">
+              <span class="font-bold text-leo-tinta">{{ habilidad.nombre }}</span>
+              <span class="font-extrabold text-leo-azul-osc">{{ habilidad.precisionInicial === null ? '—' : `${habilidad.precisionInicial}%` }}</span>
             </div>
-            <span class="rounded-full bg-leo-cielo px-3 py-1 text-xs font-extrabold text-leo-azul-osc">{{ nombreUnidadFiltro }}</span>
-          </div>
-          <div v-if="habilidades.length" class="space-y-4">
-            <div v-for="habilidad in habilidades" :key="habilidad.clave">
-              <div class="mb-1.5 flex items-center justify-between gap-3 text-sm">
-                <span class="font-bold text-leo-tinta">{{ habilidad.nombre }}</span>
-                <span class="font-extrabold text-leo-azul-osc">{{ habilidad.precisionInicial }}%</span>
-              </div>
-              <div class="h-2.5 overflow-hidden rounded-full bg-blue-50" role="progressbar" :aria-valuenow="habilidad.precisionInicial" aria-valuemin="0" aria-valuemax="100" :aria-label="habilidad.nombre + ': ' + habilidad.precisionInicial + '%'">
-                <div class="h-full rounded-full bg-gradient-to-r from-blue-800 to-sky-400 transition-all" :style="{ width: habilidad.precisionInicial + '%' }"></div>
-              </div>
-              <p class="mt-1 text-xs text-leo-suave">{{ habilidad.primerosIntentos }} primeras respuestas · {{ habilidad.intentos }} respuestas contando reintentos · {{ habilidad.errores }} incorrectas</p>
+            <div v-if="habilidad.precisionInicial !== null" class="h-3 overflow-hidden rounded-full border border-slate-300 bg-slate-100" role="progressbar" :aria-valuenow="habilidad.precisionInicial" aria-valuemin="0" aria-valuemax="100" :aria-label="habilidad.nombre + ': ' + habilidad.precisionInicial + '% de precisión inicial'">
+              <div class="h-full rounded-full bg-cyan-800 transition-all duration-500" :style="{ width: habilidad.precisionInicial + '%' }"></div>
             </div>
+            <p v-if="habilidad.precisionInicial !== null" class="mt-1 text-xs text-leo-suave">{{ habilidad.primerosCorrectos }} de {{ habilidad.primerosIntentos }} primeras respuestas correctas · {{ habilidad.erroresIniciales }} incorrectas al primer intento · {{ habilidad.reintentos }} reintentos</p>
+            <p v-else class="mt-1 text-xs text-leo-suave">No hay primeras respuestas suficientes para calcular la precisión.</p>
           </div>
-          <p v-else class="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">No hay respuestas para los filtros seleccionados.</p>
-        </section>
-
-        <section class="rounded-3xl border border-leo-linea bg-white p-5 shadow-sm sm:p-6" aria-labelledby="actividad-titulo">
-          <div class="mb-4">
-            <h3 id="actividad-titulo" class="text-lg font-black text-leo-tinta">Respuestas recientes</h3>
-            <p class="mt-1 text-sm text-leo-texto">Los errores muestran la respuesta enviada para facilitar el refuerzo.</p>
-          </div>
-          <ul v-if="respuestasRecientes.length" class="divide-y divide-leo-linea">
-            <li v-for="respuesta in respuestasRecientes" :key="respuesta.id" class="py-3 first:pt-0 last:pb-0">
-              <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-sm font-black" :class="respuesta.correct ? 'bg-emerald-100 text-emerald-900' : 'bg-rose-100 text-rose-900'">
-                  {{ respuesta.correct ? '✓' : '!' }}
-                </span>
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate text-sm font-extrabold text-leo-tinta">{{ respuesta.isTeacher ? 'Tu prueba docente · ' : '' }}{{ respuesta.studentName }}</span>
-                  <span class="block truncate text-xs text-leo-suave">U{{ respuesta.unitId }} · {{ nombreHabilidad(respuesta.assessmentCode) }} · {{ nombreActividad(respuesta) }}</span>
-                </span>
-                <span class="text-right">
-                  <span class="block text-sm font-black" :class="respuesta.correct ? 'text-emerald-800' : 'text-rose-800'">{{ respuesta.correct ? 'Correcta' : 'Incorrecta' }}</span>
-                  <span class="block text-xs text-leo-suave">{{ tiempoRelativo(respuesta.answeredAt) }}</span>
-                </span>
-              </div>
-              <p v-if="!respuesta.correct && respuesta.incorrectAnswer" class="ml-[3.25rem] mt-1 break-words rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-950">Respuesta: {{ formatearRespuesta(respuesta.incorrectAnswer) }}</p>
-            </li>
-          </ul>
-          <p v-else class="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">No hay respuestas para los filtros seleccionados.</p>
-        </section>
-      </div>
+        </div>
+        <p v-else class="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">No hay respuestas para los filtros seleccionados.</p>
+      </section>
 
       <section class="mt-4 rounded-3xl border border-leo-linea bg-white p-5 shadow-sm sm:p-6" aria-labelledby="estudiantes-titulo">
         <div class="mb-4">
           <h3 id="estudiantes-titulo" class="text-lg font-black text-leo-tinta">Progreso personal</h3>
-          <p class="mt-1 text-sm text-leo-texto">La racha cuenta días seguidos con respuestas; Unidad 1 cuenta pasos completados y Unidad 2, retos perfectos. Los logros se estiman desde esos datos.</p>
+          <p class="mt-1 text-sm text-leo-texto">Resumen de los datos guardados para cada jugador. La racha sigue vigente el día siguiente a jugar; los hitos son estimaciones, no logros sincronizados con la pantalla personal.</p>
         </div>
         <div v-if="estudiantesFiltrados.length" class="overflow-x-auto">
           <table class="w-full min-w-[850px] text-left text-sm">
             <thead class="border-b border-leo-linea text-xs uppercase text-leo-suave">
               <tr>
-                <th scope="col" class="px-3 py-3">Estudiante</th>
+                <th scope="col" class="px-3 py-3">Jugador</th>
                 <th scope="col" class="px-3 py-3">Actividad</th>
                 <th scope="col" class="px-3 py-3">U1 · Las palabras</th>
                 <th scope="col" class="px-3 py-3">U2 · Comprensión</th>
                 <th scope="col" class="px-3 py-3">Racha</th>
-                <th scope="col" class="px-3 py-3">Logros</th>
+                <th scope="col" class="px-3 py-3">Hitos estimados</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-leo-linea">
@@ -257,12 +230,38 @@
                 <td class="px-3 py-3 text-leo-texto">{{ progresoRuta(alumno, 1) }}</td>
                 <td class="px-3 py-3 text-leo-texto">{{ progresoRuta(alumno, 2) }}</td>
                 <td class="px-3 py-3 font-bold text-leo-texto">{{ alumno.currentStreakDays }} días <span class="block text-xs font-normal text-leo-suave">{{ alumno.activeDays }} días activos total</span></td>
-                <td class="px-3 py-3 text-leo-texto">{{ cantidadLogros(alumno) }} desbloqueados</td>
+                <td class="px-3 py-3 text-leo-texto">{{ cantidadLogros(alumno) }} estimados</td>
               </tr>
             </tbody>
           </table>
         </div>
         <p v-else class="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">No hay estudiantes registrados.</p>
+      </section>
+
+      <section class="mt-4 rounded-3xl border border-leo-linea bg-white p-5 shadow-sm sm:p-6" aria-labelledby="actividad-titulo">
+        <div class="mb-4">
+          <h3 id="actividad-titulo" class="text-lg font-black text-leo-tinta">Respuestas recientes</h3>
+          <p class="mt-1 text-sm text-leo-texto">Los errores muestran la respuesta enviada para facilitar el refuerzo.</p>
+        </div>
+        <ul v-if="respuestasRecientes.length" class="divide-y divide-leo-linea">
+          <li v-for="respuesta in respuestasRecientes" :key="respuesta.id" class="py-3 first:pt-0 last:pb-0">
+            <div class="flex items-center gap-3">
+              <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-sm font-black" :class="respuesta.correct ? 'bg-emerald-100 text-emerald-900' : 'bg-rose-100 text-rose-900'">
+                {{ respuesta.correct ? '✓' : '!' }}
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-sm font-extrabold text-leo-tinta">{{ respuesta.isTeacher ? 'Tu prueba docente · ' : '' }}{{ respuesta.studentName }}</span>
+                <span class="block truncate text-xs text-leo-suave">U{{ respuesta.unitId }} · {{ nombreHabilidad(respuesta.assessmentCode) }} · {{ nombreActividad(respuesta) }}</span>
+              </span>
+              <span class="text-right">
+                <span class="block text-sm font-black" :class="respuesta.correct ? 'text-emerald-800' : 'text-rose-800'">{{ respuesta.correct ? 'Correcta' : 'Incorrecta' }}</span>
+                <span class="block text-xs text-leo-suave">{{ tiempoRelativo(respuesta.answeredAt) }}</span>
+              </span>
+            </div>
+            <p v-if="!respuesta.correct && respuesta.incorrectAnswer" class="ml-[3.25rem] mt-1 break-words rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-950">Respuesta: {{ formatearRespuesta(respuesta.incorrectAnswer) }}</p>
+          </li>
+        </ul>
+        <p v-else class="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">No hay respuestas para los filtros seleccionados.</p>
       </section>
     </section>
 
@@ -469,10 +468,11 @@ export default {
       return [...agrupadas.values()]
         .map(item => ({
           ...item,
-          errores: item.intentos - item.correctos,
+          erroresIniciales: item.primerosIntentos - item.primerosCorrectos,
+          reintentos: item.intentos - item.primerosIntentos,
           precisionInicial: item.primerosIntentos
             ? Math.round((item.primerosCorrectos / item.primerosIntentos) * 100)
-            : 0
+            : null
         }))
         .sort((a, b) => a.unitId - b.unitId || a.nombre.localeCompare(b.nombre, 'es'))
     },
