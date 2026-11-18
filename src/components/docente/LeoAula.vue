@@ -45,8 +45,9 @@
       <div class="bg-white rounded-3xl shadow-md border border-gray-200 p-6 flex flex-col justify-between opacity-75">
         <div>
           <div class="flex items-center justify-between mb-4">
-            <div class="w-14 h-14 bg-gray-200 text-gray-500 rounded-2xl flex items-center justify-center text-2xl">
-              🎯
+            <!-- UI-10: Leo en vez del emoji 🎯 (el texto de la tarjeta no cambia) -->
+            <div class="w-14 h-14 bg-gray-100 rounded-2xl flex items-end justify-center overflow-hidden" aria-hidden="true">
+              <LeoPersonaje :tamano="42" quieto decorativo style="margin-bottom: -6px" />
             </div>
             <span class="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
               Próximamente
@@ -60,8 +61,9 @@
         <button
           type="button"
           disabled
-          class="w-full bg-gray-200 text-gray-400 font-bold py-3 px-6 rounded-2xl cursor-not-allowed"
+          class="w-full bg-gray-100 text-gray-600 font-bold py-3 px-6 rounded-2xl cursor-not-allowed"
         >
+          <!-- UI-10: texto gris más oscuro para que se lea (antes bg-gray-200 text-gray-400) -->
           Próximamente
         </button>
       </div>
@@ -70,8 +72,11 @@
 </template>
 
 <script>
+import LeoPersonaje from '../base/LeoPersonaje.vue' // UI-10
+
 export default {
   name: 'LeoAula',
+  components: { LeoPersonaje },
   emits: ['abrir-leo-ideas', 'volver']
 }
 </script>

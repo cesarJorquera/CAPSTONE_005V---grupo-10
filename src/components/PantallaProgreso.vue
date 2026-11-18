@@ -6,14 +6,17 @@
       <h1 class="progreso__titulo">Tu progreso</h1>
       <p class="progreso__bajada">{{ bajada }}</p>
     </header>
-    <p
-      v-if="errorCargaProgreso"
-      class="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-950"
-      role="alert"
-    >
-      {{ errorCargaProgreso }}
-      <button type="button" class="ml-2 underline" @click="loadPlayerData">Reintentar</button>
-    </p>
+    <!-- UI-10: si no se pudo leer el progreso (antes solo quedaba en la consola y se veía todo en cero) -->
+    <LeoVacio
+      v-if="errorCarga"
+      tipo="error"
+      compacto
+      titulo="No pudimos leer tu progreso"
+      texto="Lo que ves puede estar incompleto. Inténtalo de nuevo en un momento."
+      accion="Intentar de nuevo"
+      data-test="progreso-error"
+      @accion="reintentarCarga"
+    />
 
     <!-- Resumen + próximo logro -->
     <div class="progreso__fila">
@@ -152,6 +155,8 @@
             <h2 id="crecer-titulo" class="seccion__titulo">Para seguir creciendo</h2>
             <p class="mt-1 text-sm text-leo-texto">Sugerencias generales a partir de tus respuestas, no un diagnóstico de habilidad.</p>
           </div>
+          <!-- UI-10: Leo con cara de "déjame pensar", junto a los consejos -->
+          <LeoPersonaje v-if="debilidades.length" class="analisis__leo" estado="piensa" :tamano="56" decorativo />
         </div>
         <ul v-if="debilidades.length" class="analisis__lista">
           <!-- Sin porcentajes aquí: el consejo dice qué hacer, sin marcar lo que falta -->
@@ -214,6 +219,8 @@ import LeoTarjeta from './base/LeoTarjeta.vue'
 import LeoBarraProgreso from './base/LeoBarraProgreso.vue'
 import LeoBurbuja from './base/LeoBurbuja.vue'
 import LeoPanelDetalle from './base/LeoPanelDetalle.vue'
+import LeoVacio from './base/LeoVacio.vue' // UI-10
+import LeoPersonaje from './base/LeoPersonaje.vue' // UI-10
 import unidad1 from '../data/ruta/unidad1'
 import { estadoSesion } from '../router/estadoSesion'
 import { animacionesActivas } from '../utils/preferencias'
@@ -252,7 +259,7 @@ const CLAVE_ENTRADA = 'leo-perfecto-progreso-animado'
 export default {
   name: 'PantallaProgreso',
 
-  components: { RankingGlobal, LeoBoton, LeoTarjeta, LeoBarraProgreso, LeoBurbuja, LeoPanelDetalle },
+  components: { RankingGlobal, LeoBoton, LeoTarjeta, LeoBarraProgreso, LeoBurbuja, LeoPanelDetalle, LeoVacio, LeoPersonaje },
 
   props: {
     playerName: {
@@ -267,6 +274,7 @@ export default {
 
   data() {
     return {
+      errorCarga: false, // UI-10: no se pudo leer el progreso
       // Estadísticas del jugador
       juegosCompletados: 0,
       efectividad: 0,
@@ -283,7 +291,6 @@ export default {
       nuevos: [], // ids de logros desbloqueados que el alumno ve por primera vez
       brillando: null, // id del logro que hace el brillo al tocarlo
       temporizadorBrillo: null,
-      errorCargaProgreso: '',
       conEntrada: false,
       barrasLlenas: true, // con la animación de entrada, parten en 0 y se llenan una vez
       esAncho: false,
@@ -562,12 +569,12 @@ export default {
     },
 
     async loadPlayerData() {
-      this.errorCargaProgreso = ''
+      this.errorCarga = false
       try {
         this.aplicarProgreso(await cargarProgresoNube())
       } catch (error) {
         console.error('No se pudo actualizar el progreso personal desde Supabase:', error)
-        this.errorCargaProgreso = 'No se pudo cargar el progreso desde la nube. Vuelve a intentarlo.'
+        this.errorCarga = true // UI-10
       }
     },
     aplicarProgreso(progreso) {
@@ -615,6 +622,12 @@ export default {
       )
       this.rachaActual = this.calcularRachaDias(respuestas)
       this.calcularFortalezasYDebilidades(actividades)
+    },
+
+    // UI-10: el aviso vuelve a leer las mismas sesiones de progreso.
+    async reintentarCarga() {
+      this.errorCarga = false
+      await this.loadPlayerData()
     },
 
     /**
@@ -929,6 +942,7 @@ export default {
 .analisis { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .analisis__tarjeta { display: flex; flex-direction: column; gap: 0.875rem; padding: 1.125rem; }
 .analisis__cabecera { display: flex; align-items: center; gap: 0.75rem; }
+.analisis__leo { margin-left: auto; flex-shrink: 0; margin-top: -0.5rem; } /* UI-10 */
 .analisis__lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.875rem; }
 .analisis__item { display: flex; flex-direction: column; gap: 0.25rem; padding-top: 0.875rem; border-top: 1px solid #e8eef6; }
 .analisis__item:first-child { padding-top: 0; border-top: 0; }

@@ -11,13 +11,15 @@
     />
 
     <template v-else>
-      <div class="max-w-xl mx-auto px-4 pt-4">
+      <!-- UI-10: si falla la carga, el aviso de Leo apenado reemplaza al saludo (un solo Leo en pantalla) -->
+      <div v-if="!errorCarga" class="max-w-xl mx-auto px-4 pt-4">
         <LeoMascota
           :estado="estadoLeo"
           :mensaje="mensajeLeo"
         />
       </div>
 
+      <!-- UI-10: el aviso anterior, en texto plano:
       <p
         v-if="errorCarga"
         class="max-w-xl mx-auto mx-4 mt-4 p-3 rounded-xl bg-yellow-100 text-yellow-800 text-sm"
@@ -25,6 +27,17 @@
       >
         No pudimos cargar tu avance guardado. Puedes seguir practicando; revisa tu conexión y vuelve a entrar más tarde.
       </p>
+      -->
+      <div v-if="errorCarga" class="max-w-xl mx-auto px-4 pt-4">
+        <LeoVacio
+          tipo="error"
+          titulo="No pudimos cargar tu avance guardado"
+          texto="Puedes seguir practicando. Revisa tu conexión e inténtalo de nuevo."
+          accion="Intentar de nuevo"
+          data-test="ruta-error"
+          @accion="cargarCompletadas"
+        />
+      </div>
 
       <RutaUnidad
         v-if="!cargando"
@@ -32,6 +45,13 @@
         :nodos="nodosConEstado"
         @abrir="abrirTarea"
       />
+      <!-- UI-10: silueta quieta del camino mientras carga, en vez de la pantalla vacía -->
+      <div v-else class="ruta-silueta" aria-hidden="true" data-test="ruta-silueta">
+        <div v-for="n in 5" :key="n" class="ruta-silueta__paso" :class="{ 'ruta-silueta__paso--der': n % 2 === 0 }">
+          <span class="ruta-silueta__nodo"></span>
+          <span class="ruta-silueta__lineas"><span></span><span></span></span>
+        </div>
+      </div>
 
       <div class="max-w-xl mx-auto px-4 pb-8 space-y-4">
         <!-- Herramientas de demo: solo existen con npm run serve, nunca en producción -->
@@ -68,13 +88,14 @@
 import TareaRunner from './TareaRunner.vue'
 import RutaUnidad from './RutaUnidad.vue'
 import LeoMascota from './LeoMascota.vue'
+import LeoVacio from '../base/LeoVacio.vue'
 import { estadoDeNodos } from './progresoRuta'
 import { cargarProgresoNube } from '../../utils/supabaseProgress'
 import unidad1 from '../../data/ruta/unidad1'
 
 export default {
   name: 'RutaAprendizaje',
-  components: { TareaRunner, RutaUnidad, LeoMascota },
+  components: { TareaRunner, RutaUnidad, LeoMascota, LeoVacio },
   emits: ['salir'],
   data() {
     return {
@@ -168,3 +189,26 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* UI-10: silueta de la ruta mientras carga (quieta, sin brillo) */
+.ruta-silueta {
+  max-width: 36rem;
+  margin: 1.5rem auto 0;
+  padding: 1.375rem 1.25rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1.375rem;
+  background: #ffffff;
+  border: 1px solid #d9e4f1;
+  border-radius: 1.25rem;
+}
+@media (max-width: 39.99rem) { .ruta-silueta { margin-left: 1rem; margin-right: 1rem; } }
+.ruta-silueta__paso { display: flex; align-items: center; gap: 0.875rem; }
+.ruta-silueta__paso--der { padding-left: 4rem; }
+.ruta-silueta__nodo { width: 3.5rem; height: 3.5rem; border-radius: 50%; background: #e4ecf6; flex-shrink: 0; }
+.ruta-silueta__lineas { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+.ruta-silueta__lineas span { height: 0.875rem; width: 62%; border-radius: 0.375rem; background: #e4ecf6; }
+.ruta-silueta__lineas span + span { height: 0.75rem; width: 40%; background: #eef3f9; }
+</style>
