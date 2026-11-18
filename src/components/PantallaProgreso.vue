@@ -1,14 +1,11 @@
 <template>
-  <!-- UI-06: Rework de Progreso. Misma familia visual que Inicio (UI-05): fondo plano,
-       tarjetas blancas, íconos SVG (sin emojis) y componentes base. Solo cambia lo visual;
-       el único cálculo que se tocó es el total del curso (ver `totalActividades`). -->
+  <!-- UI-06: progreso personal calculado desde las sesiones de Supabase. -->
   <div class="progreso" :class="{ 'progreso--entrada': conEntrada }">
 
     <header class="progreso__cabecera">
       <h1 class="progreso__titulo">Tu progreso</h1>
       <p class="progreso__bajada">{{ bajada }}</p>
     </header>
-
     <!-- UI-10: si no se pudo leer el progreso (antes solo quedaba en la consola y se veía todo en cero) -->
     <LeoVacio
       v-if="errorCarga"
@@ -128,7 +125,10 @@
           <span class="icono" style="background: #e3f3ea">
             <svg viewBox="0 0 24 24" fill="none" stroke="#1f7a47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="iconos.estrella" /></svg>
           </span>
-          <h2 id="fortalezas-titulo" class="seccion__titulo">Tus fortalezas</h2>
+          <div>
+            <h2 id="fortalezas-titulo" class="seccion__titulo">Tus fortalezas</h2>
+            <p class="mt-1 text-sm text-leo-texto">Resumen general de precisión inicial y constancia; no evalúa una habilidad por separado.</p>
+          </div>
         </div>
         <ul v-if="fortalezas.length" class="analisis__lista">
           <li v-for="(f, i) in fortalezas" :key="i" class="analisis__item">
@@ -151,7 +151,10 @@
           <span class="icono" style="background: #fff3cf">
             <svg viewBox="0 0 24 24" fill="none" stroke="#b07a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="iconos.brote" /></svg>
           </span>
-          <h2 id="crecer-titulo" class="seccion__titulo">Para seguir creciendo</h2>
+          <div>
+            <h2 id="crecer-titulo" class="seccion__titulo">Para seguir creciendo</h2>
+            <p class="mt-1 text-sm text-leo-texto">Sugerencias generales a partir de tus respuestas, no un diagnóstico de habilidad.</p>
+          </div>
           <!-- UI-10: Leo con cara de "déjame pensar", junto a los consejos -->
           <LeoPersonaje v-if="debilidades.length" class="analisis__leo" estado="piensa" :tamano="56" decorativo />
         </div>
@@ -206,11 +209,10 @@
 </template>
 
 <script>
-// UI-04: sección "Progreso". Aquí viven el bloque "Tu Progreso" y el Ranking Global, que antes estaban
-// al final de MiProgreso.vue (hoy solo Inicio). La lógica de estadísticas se movió tal cual desde allí.
-// UI-06: rework visual con los componentes base de UI-05. Las estadísticas (nivel, efectividad,
-// racha, fortalezas, áreas de mejora) se calculan igual que antes; solo cambió el total del curso.
-import { createGameManager, UNIDADES_CONFIG } from '../utils/gameManager'
+// UI-04: sección personal de progreso separada de Inicio.
+// Las métricas se derivan de sesiones y respuestas guardadas en Supabase.
+import { UNIDADES_CONFIG } from '../utils/gameManager'
+import { cargarProgresoNube } from '../utils/supabaseProgress'
 import RankingGlobal from './RankingGlobal.vue'
 import LeoBoton from './base/LeoBoton.vue'
 import LeoTarjeta from './base/LeoTarjeta.vue'
@@ -222,6 +224,7 @@ import LeoPersonaje from './base/LeoPersonaje.vue' // UI-10
 import unidad1 from '../data/ruta/unidad1'
 import { estadoSesion } from '../router/estadoSesion'
 import { animacionesActivas } from '../utils/preferencias'
+import unidad2 from '../data/ruta/unidad2'
 
 // UI-06: íconos de trazo (24x24) para niveles, cifras y logros. Reemplazan a los emojis.
 const ICONOS = {
@@ -275,14 +278,12 @@ export default {
       // Estadísticas del jugador
       juegosCompletados: 0,
       efectividad: 0,
+      primerasRespuestas: 0,
       rachaActual: 0,
       fortalezas: [],
       debilidades: [],
       juegosPerfectos: 0,
       tiempoPromedioRapido: false,
-
-      // Gestor de juegos
-      gameManager: null,
 
       // --- UI-06 ---
       iconos: ICONOS,
@@ -301,15 +302,11 @@ export default {
     // ============================================
     // UI-06: TOTAL DEL CURSO
     // ============================================
-    // Antes era un número fijo (32 = 12 + 10 + 10) que ya no calzaba con los juegos que existen
-    // ni contaba los pasos de la ruta. Ahora se cuenta desde los datos: todos los juegos
-    // configurados (UNIDADES_CONFIG: 53 hoy) + los pasos de la ruta de la Unidad 1 (8).
-    // `juegosCompletados` (getEstadisticas) ya cuenta los pasos de la ruta, porque la copia local
-    // del progreso se baja de Supabase con todas las partidas completadas.
+    // Cuenta las actividades disponibles en juegos y rutas de ambas unidades.
     totalActividades() {
       const juegos = new Set()
       Object.values(UNIDADES_CONFIG).forEach(u => (u.juegos || []).forEach(j => juegos.add(`${j.gameId}-${j.textId}`)))
-      return juegos.size + unidad1.nodos.length
+      return juegos.size + unidad1.nodos.length + Object.keys(unidad2.tareas).length
     },
     porcentajeCurso() {
       if (!this.totalActividades) return 0
@@ -335,10 +332,10 @@ export default {
         : 'Aquí verás cómo avanzas. Tu primer paso está a un toque.'
     },
     cifras() {
-      const hay = this.juegosCompletados > 0
+      const hay = this.primerasRespuestas > 0
       return [
         { id: 'actividades', valor: String(this.juegosCompletados), nombre: 'Actividades completadas', nota: 'Juegos y pasos de tu ruta', icono: ICONOS.check, ...COLOR.azul },
-        { id: 'efectividad', valor: hay ? `${this.efectividadSegura}%` : '—', nombre: 'Efectividad', nota: hay ? 'Respuestas correctas' : 'Aparece tras tu primera actividad', icono: ICONOS.diana, ...COLOR.verde },
+        { id: 'efectividad', valor: hay ? `${this.efectividadSegura}%` : '—', nombre: 'Precisión al primer intento', nota: hay ? `${this.primerasRespuestas} primeras respuestas` : 'Aparece tras tu primera respuesta', icono: ICONOS.diana, ...COLOR.verde },
         { id: 'racha', valor: hay ? String(this.rachaActual) : '—', nombre: 'Días seguidos', nota: 'Practica a tu ritmo', icono: ICONOS.calendario, ...COLOR.ambar }
       ]
     },
@@ -354,8 +351,8 @@ export default {
         { id: 'camino', nombre: 'En Camino', desc: 'Completa 3 actividades', icono: ICONOS.sube, color: 'azul', valor: n, meta: 3, unidad: 'actividades' },
         { id: 'persistente', nombre: 'Persistente', desc: 'Completa 5 actividades', icono: ICONOS.capas, color: 'ambar', valor: n, meta: 5, unidad: 'actividades' },
         { id: 'maestro', nombre: 'Maestro', desc: 'Completa 10 actividades', icono: ICONOS.birrete, color: 'azul', valor: n, meta: 10, unidad: 'actividades' },
-        { id: 'experto', nombre: 'Experto', desc: '80% de efectividad', icono: ICONOS.diana, color: 'verde', valor: ef, meta: 80, unidad: '%' },
-        { id: 'perfeccion', nombre: 'Perfección', desc: '95% de efectividad', icono: ICONOS.diamante, color: 'ambar', valor: ef, meta: 95, unidad: '%' },
+        { id: 'experto', nombre: 'Experto', desc: '80% de precisión al primer intento', icono: ICONOS.diana, color: 'verde', valor: ef, meta: 80, unidad: '%' },
+        { id: 'perfeccion', nombre: 'Perfección', desc: '95% de precisión al primer intento', icono: ICONOS.diamante, color: 'ambar', valor: ef, meta: 95, unidad: '%' },
         { id: 'racha3', nombre: 'Racha de Fuego', desc: 'Practica 3 días seguidos', icono: ICONOS.calendario, color: 'azul', valor: racha, meta: 3, unidad: 'días' },
         { id: 'velocista', nombre: 'Velocista', desc: 'Respuestas rápidas', icono: ICONOS.rayo, color: 'verde', valor: this.tiempoPromedioRapido ? 1 : 0, meta: null, unidad: '' },
         { id: 'sinerrores', nombre: 'Sin Errores', desc: '100% en una actividad', icono: ICONOS.check, color: 'ambar', valor: this.juegosPerfectos, meta: 1, unidad: 'actividades' },
@@ -393,7 +390,7 @@ export default {
       const elegido = lista.reduce((a, b) => (b.valor / b.meta > a.valor / a.meta ? b : a))
       const falta = elegido.meta - elegido.valor
       let texto
-      if (elegido.unidad === '%') texto = `Llega a ${elegido.meta}% de efectividad`
+      if (elegido.unidad === '%') texto = `Llega a ${elegido.meta}% de precisión inicial`
       else if (elegido.valor === 0 && elegido.meta === 1) texto = elegido.id === 'paso1' ? 'Completa tu primera actividad' : 'Haz una actividad sin errores'
       else texto = falta === 1 ? 'Te falta 1 actividad' : `Te faltan ${falta} actividades`
       return { ...elegido, falta: texto }
@@ -464,39 +461,39 @@ export default {
     
     // Mensaje motivacional dinámico según el progreso REAL
     mensajeMotivacional() {
-      // Mensajes basados en efectividad Y cantidad de juegos
       if (this.efectividad >= 95 && this.juegosCompletados >= 15) {
-        return '¡Excelente dominio! Tu comprensión lectora es sobresaliente.';
+        return '¡Excelente! Mantienes una precisión inicial sobresaliente.';
       } else if (this.efectividad >= 90 && this.juegosCompletados >= 10) {
-        return 'Muy buen nivel. Mantienes consistencia en tu desempeño.';
+        return 'Muy buen resultado. Acertaste en gran parte de tus primeras respuestas.';
       } else if (this.efectividad >= 80 && this.juegosCompletados >= 8) {
-        return 'Buen progreso. Estás desarrollando habilidades sólidas.';
+        return 'Tu precisión inicial es alta. Sigue practicando las distintas actividades.';
       } else if (this.efectividad >= 70 && this.juegosCompletados >= 5) {
-        return 'Vas por buen camino. Sigue practicando regularmente.';
+        return 'Vas por buen camino. Revisa tus errores y continúa practicando.';
       } else if (this.efectividad >= 60 && this.juegosCompletados >= 3) {
-        return 'Progreso visible. La constancia te ayudará a mejorar.';
+        return 'Cada actividad suma. Practica a tu ritmo y revisa tus respuestas.';
       } else if (this.juegosCompletados >= 5) {
-        return 'Has practicado varios ejercicios. Revisa tus errores para mejorar.';
+        return 'Has completado varias actividades. Revisa tus respuestas incorrectas.';
       } else if (this.juegosCompletados >= 2) {
-        return 'Primeros pasos completados. Continúa practicando para avanzar.';
+        return 'Ya completaste tus primeras actividades. Sigue practicando.';
       } else if (this.juegosCompletados === 1) {
-        return 'Primer ejercicio completado. Sigue practicando para mejorar.';
+        return 'Completaste tu primera actividad. Sigue practicando.';
       } else {
-        return 'Comienza tu práctica y desarrolla tus habilidades de lectura.';
+        return 'Comienza tu práctica y revisa tu precisión en las respuestas.';
       }
     }
   },
 
-  mounted() {
-    try {
-      this.gameManager = createGameManager(this.playerName)
-      this.loadPlayerData()
-      // UI-06: animación de entrada, barras que se llenan y logros nuevos
-      this.prepararVista()
-    } catch (error) {
-      console.error('❌ Error al inicializar la sección Progreso:', error)
-      this.errorCarga = true // UI-10
+  watch: {
+    userProgress(progreso) {
+      this.aplicarProgreso(progreso)
     }
+  },
+
+  mounted() {
+    this.aplicarProgreso(this.userProgress)
+    this.loadPlayerData()
+    // UI-06: animación de entrada, barras que se llenan y logros nuevos
+    this.prepararVista()
   },
 
   beforeUnmount() {
@@ -571,69 +568,66 @@ export default {
       this.$router.push({ name: 'inicio' })
     },
 
-    /**
-     * Carga todos los datos del jugador desde localStorage
-     * OPTIMIZADO: Usa el mejor puntaje de cada juego, no el promedio de intentos
-     */
-    loadPlayerData() {
-      try {
-        if (!this.gameManager) {
-          console.warn('⚠️ GameManager no inicializado')
-          this.resetearEstadisticas()
-          return
-        }
-
-        // Obtener estadísticas mejoradas del GameManager
-        const stats = this.gameManager.getEstadisticas()
-        
-        // Validar y actualizar estado con valores seguros
-        this.juegosCompletados = Number.isFinite(stats.juegosCompletados) ? stats.juegosCompletados : 0
-        this.efectividad = Number.isFinite(stats.efectividad) ? stats.efectividad : 0
-        this.juegosPerfectos = Number.isFinite(stats.juegosPerfectos) ? stats.juegosPerfectos : 0
-        
-        // Calcular racha (días únicos con actividad)
-        const progreso = this.gameManager.loadProgress()
-        this.rachaActual = this.calcularRachaDias(progreso)
-
-        // Calcular fortalezas y debilidades con análisis mejorado
-        this.calcularFortalezasYDebilidades(progreso)
-        
-        console.log('✅ Datos del jugador cargados (optimizados):', {
-          juegosCompletados: this.juegosCompletados,
-          efectividad: this.efectividad,
-          juegosPerfectos: this.juegosPerfectos,
-          nivel: this.nivel,
-          racha: this.rachaActual
-        })
-      } catch (error) {
-        console.error('❌ Error al cargar datos del jugador:', error)
-        this.errorCarga = true // UI-10
-        this.resetearEstadisticas()
-      }
-    },
-
-    // UI-10: "Intentar de nuevo" del aviso de error (vuelve a leer el mismo progreso)
-    reintentarCarga() {
+    async loadPlayerData() {
       this.errorCarga = false
       try {
-        if (!this.gameManager) this.gameManager = createGameManager(this.playerName)
-        this.loadPlayerData()
+        this.aplicarProgreso(await cargarProgresoNube())
       } catch (error) {
-        console.error('❌ Error al reintentar la carga de Progreso:', error)
-        this.errorCarga = true
+        console.error('No se pudo actualizar el progreso personal desde Supabase:', error)
+        this.errorCarga = true // UI-10
       }
     },
+    aplicarProgreso(progreso) {
+      const sesiones = Array.isArray(progreso) ? progreso : []
+      const porActividad = new Map()
 
-    /**
-     * Resetea todas las estadísticas a valores por defecto
-     */
-    resetearEstadisticas() {
-      this.juegosCompletados = 0
-      this.efectividad = 0
-      this.rachaActual = 0
-      this.juegosPerfectos = 0
-      this.fortalezas = []
-      this.debilidades = []
+      sesiones
+        .filter(sesion => sesion && sesion.status === 'completed' && Number(sesion.answeredCount) > 0 && sesion.score != null)
+        .forEach(sesion => {
+          const puntaje = Number(sesion.score)
+          if (!Number.isFinite(puntaje)) return
+          const clave = Number(sesion.gameId) + ':' + sesion.textId
+          const anterior = porActividad.get(clave)
+          if (!anterior || puntaje > anterior.score) {
+            porActividad.set(clave, {
+              gameId: Number(sesion.gameId),
+              textId: sesion.textId,
+              score: puntaje,
+              date: sesion.date
+            })
+          }
+        })
+
+      const actividades = [...porActividad.values()].sort((a, b) =>
+        new Date(a.date || 0) - new Date(b.date || 0)
+      )
+      this.juegosCompletados = actividades.length
+      this.juegosPerfectos = actividades.filter(actividad => actividad.score === 100).length
+
+      const primerasRespuestas = sesiones.flatMap(sesion =>
+        (sesion.respuestas || []).filter(respuesta =>
+          Number(respuesta.attempt_number || 1) === 1
+        )
+      )
+      this.primerasRespuestas = primerasRespuestas.length
+      const correctasIniciales = primerasRespuestas.filter(respuesta => respuesta.is_correct).length
+      this.efectividad = primerasRespuestas.length
+        ? Math.round((correctasIniciales / primerasRespuestas.length) * 100)
+        : 0
+
+      const respuestas = sesiones.flatMap(sesion =>
+        (sesion.respuestas || [])
+          .filter(respuesta => respuesta.answered_at)
+          .map(respuesta => ({ date: respuesta.answered_at }))
+      )
+      this.rachaActual = this.calcularRachaDias(respuestas)
+      this.calcularFortalezasYDebilidades(actividades)
+    },
+
+    // UI-10: el aviso vuelve a leer las mismas sesiones de progreso.
+    async reintentarCarga() {
+      this.errorCarga = false
+      await this.loadPlayerData()
     },
 
     /**
@@ -644,35 +638,42 @@ export default {
     calcularRachaDias(progressArray) {
       if (progressArray.length === 0) return 0
 
-      // Obtener fechas únicas (sin hora) y ordenarlas
-      const fechasUnicas = [...new Set(progressArray.map(p => {
-        const fecha = new Date(p.date)
-        return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
-      }))].sort().reverse()
+      const formatoFecha = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Santiago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+      const diaChile = fecha => {
+        const partes = Object.fromEntries(formatoFecha.formatToParts(fecha).map(parte => [parte.type, parte.value]))
+        return `${partes.year}-${partes.month}-${partes.day}`
+      }
+      const fechasUnicas = [...new Set(progressArray
+        .map(p => new Date(p.date))
+        .filter(fecha => Number.isFinite(fecha.getTime()))
+        .map(diaChile))].sort().reverse()
 
-      // Calcular racha consecutiva desde hoy
-      let racha = 0
-      const hoy = new Date()
-      const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
-      
-      // Si jugó hoy, empieza racha
-      if (fechasUnicas[0] === hoyStr) {
-        racha = 1
-        
-        // Contar días consecutivos hacia atrás
-        for (let i = 1; i < fechasUnicas.length; i++) {
-          const fechaActual = new Date(fechasUnicas[i - 1])
-          const fechaSiguiente = new Date(fechasUnicas[i])
-          const diferenciaDias = Math.floor((fechaActual - fechaSiguiente) / (1000 * 60 * 60 * 24))
-          
-          if (diferenciaDias === 1) {
-            racha++
-          } else {
-            break // Racha rota
-          }
+      const hoyStr = diaChile(new Date())
+
+      const [anioHoy, mesHoy, diaHoy] = hoyStr.split('-').map(Number)
+      const ayerStr = new Date(Date.UTC(anioHoy, mesHoy - 1, diaHoy) - 86400000).toISOString().slice(0, 10)
+      if (fechasUnicas[0] !== hoyStr && fechasUnicas[0] !== ayerStr) return 0
+
+      let racha = 1
+      for (let i = 1; i < fechasUnicas.length; i++) {
+        const [anioActual, mesActual, diaActual] = fechasUnicas[i - 1].split('-').map(Number)
+        const [anioSiguiente, mesSiguiente, diaSiguiente] = fechasUnicas[i].split('-').map(Number)
+        const fechaActual = Date.UTC(anioActual, mesActual - 1, diaActual)
+        const fechaSiguiente = Date.UTC(anioSiguiente, mesSiguiente - 1, diaSiguiente)
+        const diferenciaDias = (fechaActual - fechaSiguiente) / 86400000
+
+        if (diferenciaDias === 1) {
+          racha++
+        } else {
+          break
         }
       }
-      
+
       return racha
     },
 
@@ -684,39 +685,19 @@ export default {
         return; // Sin datos, no hay análisis
       }
 
-      // Analizar por tipo de pregunta o categoría
-      const categorias = {
-        sustantivos: [],
-        verbos: [],
-        adjetivos: [],
-        conectores: []
-      };
-
-      // Agrupar puntajes por categoría (si tienes esa info guardada)
-      progressArray.forEach(p => {
-        if (p.categoria) {
-          if (!categorias[p.categoria]) categorias[p.categoria] = [];
-          categorias[p.categoria].push(p.score);
-        }
-      });
-
-      // Analizar rendimiento general
-      const puntajes = progressArray.map(p => p.score || 0);
-      const promedioGeneral = puntajes.reduce((a, b) => a + b, 0) / puntajes.length;
+      const promedioGeneral = this.efectividad;
       
       // FORTALEZAS
       if (promedioGeneral >= 90) {
         this.fortalezas.push({
-          emoji: '🌟',
-          titulo: 'Excelencia en Comprensión',
-          descripcion: 'Mantienes un rendimiento excepcional en todos los ejercicios',
+          titulo: 'Alta precisión inicial',
+          descripcion: 'Acertaste en la mayoría de tus primeras respuestas.',
           porcentaje: Math.round(promedioGeneral)
         });
       }
 
       if (this.juegosPerfectos >= 2) {
         this.fortalezas.push({
-          emoji: '💎',
           titulo: 'Perfeccionista',
           descripcion: `Has logrado ${this.juegosPerfectos} juegos con puntuación perfecta`,
           porcentaje: 100
@@ -725,33 +706,16 @@ export default {
 
       if (this.rachaActual >= 5) {
         this.fortalezas.push({
-          emoji: '�',
           titulo: 'Constancia Ejemplar',
           descripcion: `Racha de ${this.rachaActual} días practicando. ¡Increíble dedicación!`,
           porcentaje: Math.min(this.rachaActual * 10, 100)
         });
       }
 
-      // Analizar mejora a lo largo del tiempo
-      if (progressArray.length >= 3) {
-        const primerosTres = progressArray.slice(0, 3).map(p => p.score).reduce((a,b) => a+b) / 3;
-        const ultimosTres = progressArray.slice(-3).map(p => p.score).reduce((a,b) => a+b) / 3;
-        
-        if (ultimosTres > primerosTres + 10) {
-          this.fortalezas.push({
-            emoji: '�',
-            titulo: 'Progreso Acelerado',
-            descripcion: 'Has mejorado significativamente con la práctica',
-            porcentaje: Math.round(ultimosTres)
-          });
-        }
-      }
-
-      if (promedioGeneral >= 80 && this.juegosCompletados >= 5) {
+      if (promedioGeneral >= 80 && promedioGeneral < 90 && this.juegosCompletados >= 5) {
         this.fortalezas.push({
-          emoji: '🎯',
-          titulo: 'Dominio Consistente',
-          descripcion: 'Mantienes un alto rendimiento en múltiples ejercicios',
+          titulo: 'Buena precisión inicial',
+          descripcion: 'Has acertado en la mayoría de tus primeras respuestas.',
           porcentaje: Math.round(promedioGeneral)
         });
       }
@@ -759,29 +723,11 @@ export default {
       // DEBILIDADES / ÁREAS DE MEJORA
       if (promedioGeneral < 70 && progressArray.length >= 2) {
         this.debilidades.push({
-          emoji: '📚',
-          titulo: 'Comprensión en Desarrollo',
-          descripcion: 'Continúa practicando para fortalecer tu comprensión lectora',
+          titulo: 'Respuestas por revisar',
+          descripcion: 'Tus primeras respuestas muestran espacio para practicar.',
           porcentaje: Math.round(promedioGeneral),
-          consejo: 'Lee cada texto 2 veces'
+          consejo: 'Revisa la explicación después de cada respuesta.'
         });
-      }
-
-      // Detectar inconsistencia en resultados
-      if (progressArray.length >= 3) {
-        const desviacion = Math.sqrt(
-          puntajes.map(x => Math.pow(x - promedioGeneral, 2)).reduce((a,b) => a+b) / puntajes.length
-        );
-        
-        if (desviacion > 25) {
-          this.debilidades.push({
-            emoji: '⚡',
-            titulo: 'Resultados Variables',
-            descripcion: 'Tu rendimiento varía entre ejercicios',
-            porcentaje: Math.round(promedioGeneral),
-            consejo: 'Mantén concentración constante'
-          });
-        }
       }
 
       if (this.rachaActual < 2 && this.juegosCompletados >= 2) {
@@ -800,9 +746,8 @@ export default {
       
       if (promedioReciente < 60 && progressArray.length >= 3) {
         this.debilidades.push({
-          emoji: '🎲',
-          titulo: 'Desafíos Recientes',
-          descripcion: 'Tus últimos ejercicios presentaron dificultad',
+          titulo: 'Puntajes recientes por revisar',
+          descripcion: 'El promedio de tus tres actividades completadas más recientes es menor a 60%.',
           porcentaje: Math.round(promedioReciente),
           consejo: 'Revisa las reglas antes de empezar'
         });

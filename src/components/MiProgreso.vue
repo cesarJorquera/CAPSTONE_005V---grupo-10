@@ -204,6 +204,13 @@
 
       <template v-if="detalle && !detalle.bloqueada" #pie>
         <LeoBoton ancho data-test="panel-entrar" @click="entrarDesdeDetalle(detalle.id)">{{ detalle.boton }}</LeoBoton>
+        <button
+          v-if="detalle.id === 'u2'"
+          type="button"
+          class="mt-2 w-full rounded-xl px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+          data-test="unidad2-juego-anterior"
+          @click="entrarExperienciaAnterior"
+        >Abrir experiencia anterior</button>
       </template>
     </LeoPanelDetalle>
 
@@ -249,6 +256,7 @@ import LeoVacio from './base/LeoVacio.vue' // UI-10
 import LeoPersonaje from './base/LeoPersonaje.vue' // UI-10
 import { siguienteLogro, marcarLogroVisto, textoLogro } from '../utils/logrosLeo' // UI-09
 import unidad1 from '../data/ruta/unidad1'
+import unidad2 from '../data/ruta/unidad2'
 import { estadoDeNodos } from './ruta/progresoRuta'
 import { cargarProgresoNube, sesionSigueEnCurso } from '../utils/supabaseProgress'
 import { listarAvancesGuardados } from '../utils/avanceJuego'
@@ -339,9 +347,26 @@ export default {
     continuar() {
       return elegirContinuar({ partida: this.partida, unidad: unidad1, nodos: this.nodosRuta })
     },
+    progresoRutaUnidad2() {
+      const sesiones = this.sesionesNube || this.userProgress || []
+      const idsRetos = new Set(Object.keys(unidad2.tareas))
+      const retosAprobados = new Set(
+        sesiones
+          .filter(sesion =>
+            Number(sesion.gameId) === unidad2.gameId &&
+            sesion.status === 'completed' &&
+            idsRetos.has(sesion.textId) &&
+            sesion.totalQuestions > 0 &&
+            sesion.correctAnswers === sesion.totalQuestions
+          )
+          .map(sesion => sesion.textId)
+      )
+      const totalRetos = unidad2.habilidades.reduce((total, habilidad) => total + habilidad.retos.length, 0)
+      return Math.round((retosAprobados.size / totalRetos) * 100)
+    },
     unidades() {
       const { hechos, total } = this.pasosRuta
-      const u2 = this.progresoU2
+      const u2 = this.progresoRutaUnidad2
       return [
         {
           id: 'u1',
@@ -365,26 +390,23 @@ export default {
           id: 'u2',
           antetitulo: 'Unidad 2',
           nombre: 'Comprensión lectora',
-          resumen: 'Idea principal, causa y efecto, inferencias.',
-          // Borrador de texto: validar con el cliente
-          paraQue: 'Practicas cómo entender lo que lees: qué dice el texto, por qué pasa algo y qué se puede deducir de él.',
+          resumen: '7 habilidades lectoras en 28 retos breves.',
+          paraQue: 'Conecta ideas, usa pistas del texto, compara fuentes y reconoce el tono mediante minijuegos cortos.',
           practicas: [
             'Identificar la idea principal',
             'Identificar causa y efecto',
             'Hacer inferencias',
             'Identificar detalles específicos',
-            'Identificar el propósito o la intención'
+            'Identificar el propósito o la intención',
+            'Comparar fuentes',
+            'Reconocer el tono'
           ],
-          proximamente: [
-            'Comparación y contraste de ideas',
-            'Interpretación de metáforas',
-            'Análisis de estructura textual'
-          ],
+          proximamente: [],
           valor: u2,
           maximo: 100,
           color: 'verde',
           textoAvance: u2 ? `${u2} % completado` : 'Aún no empiezas',
-          boton: u2 ? 'Seguir jugando' : 'Empezar',
+          boton: u2 ? 'Seguir la ruta' : 'Empezar la ruta',
           bloqueada: false,
           icono: ICONOS.u2,
           fondoIcono: '#e3f3ea',
@@ -430,8 +452,6 @@ export default {
       
       // (UI-04) Los datos de progreso se cargan ahora en PantallaProgreso.vue
 
-      // UI-05: avance de la Unidad 2 (igual que antes, desde gameManager)
-      this.progresoU2 = this.getUnidadProgress(2)
       // UI-05: tarjeta "Continuar", ancho de pantalla y animación de entrada
       this.prepararInicio()
       
@@ -549,7 +569,7 @@ export default {
       this.playSound('click')
       const { destino, tipo } = this.continuar
       if (tipo === 'unidad2') {
-        this.iniciarUnidad(2)
+        this.entrarRutaUnidad2()
         return
       }
       if (destino) this.$router.push(destino)
@@ -557,7 +577,7 @@ export default {
 
     entrarUnidad(id) {
       if (id === 'u1') this.entrarRuta()
-      else if (id === 'u2') this.iniciarUnidad(2)
+      else if (id === 'u2') this.entrarRutaUnidad2()
     },
     abrirDetalle(id) {
       this.playSound('click')
@@ -569,6 +589,10 @@ export default {
     entrarDesdeDetalle(id) {
       this.detalleAbierto = null
       this.entrarUnidad(id)
+    },
+    entrarExperienciaAnterior() {
+      this.detalleAbierto = null
+      this.iniciarUnidad(2)
     },
 
     // UI-04: loadPlayerData, resetearEstadisticas, calcularRachaDias y calcularFortalezasYDebilidades
@@ -598,6 +622,10 @@ export default {
     entrarRuta() {
       this.playSound('click')
       this.$emit('abrir-ruta')
+    },
+    entrarRutaUnidad2() {
+      this.playSound('click')
+      this.$emit('abrir-ruta-unidad2')
     },
     /**
      * Inicia una unidad seleccionando inteligentemente un juego

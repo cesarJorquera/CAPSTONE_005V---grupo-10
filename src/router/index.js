@@ -36,6 +36,7 @@ import PantallaLeoIA from '../components/PantallaLeoIA.vue'
 // import SeccionEnConstruccion from '../components/menu/SeccionEnConstruccion.vue'
 import PantallaAjustes from '../components/PantallaAjustes.vue'
 import RutaAprendizaje from '../components/ruta/RutaAprendizaje.vue'
+import RutaUnidad2 from '../components/ruta/RutaUnidad2.vue'
 import pant_reglas_game1 from '../components/pant_reglas_game1.vue'
 import pant_game_1 from '../components/pant_game_1.vue'
 import pant_reglas_game2 from '../components/pant_reglas_game2.vue'
@@ -89,6 +90,7 @@ const routes = [
   { path: '/leoia', name: 'leoia', component: PantallaLeoIA, meta: { ...APP, seccion: 'leoia', ancho: true, titulo: 'LeoIA' } },
   { path: '/ajustes', name: 'ajustes', component: PantallaAjustes, meta: { ...APP, seccion: 'ajustes', ancho: true, titulo: 'Ajustes' } },
   { path: '/ruta', name: 'ruta', component: RutaAprendizaje, meta: { ...APP, seccion: 'inicio', titulo: 'Unidad 1 · Las palabras', atras: 'inicio' } },
+  { path: '/ruta/unidad-2', name: 'ruta-unidad2', component: RutaUnidad2, meta: { ...APP, seccion: 'inicio', ancho: true, titulo: 'Unidad 2', atras: 'inicio' } },
   { path: '/juego/1/:textId/reglas', name: 'juego1-reglas', component: pant_reglas_game1, meta: { ...APP, seccion: 'inicio', titulo: 'Instrucciones', atras: 'inicio' }, beforeEnter: textoJuego1Valido },
   { path: '/juego/1/:textId', name: 'juego1', component: pant_game_1, meta: { ...JUEGO, mascota: true, avance: to => ({ juego: 1, contenido: to.params.textId }) }, beforeEnter: textoJuego1Valido },
   { path: '/juego/2/:textId/reglas', name: 'juego2-reglas', component: pant_reglas_game2, meta: { ...APP, seccion: 'inicio', titulo: 'Instrucciones', atras: 'inicio' }, beforeEnter: textoJuego2Valido },
