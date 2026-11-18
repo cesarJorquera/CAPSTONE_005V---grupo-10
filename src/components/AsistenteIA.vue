@@ -21,8 +21,10 @@
 
       <!-- Sin API key: aviso neutro para el alumno. La instrucción técnica (.env.local)
            queda en la consola y en el comentario de verificarAPIKey, para quien desarrolla. -->
-      <div v-if="!apiKeyValida" class="aviso aviso--ambar" role="status" data-test="aviso-ia">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#8a5a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M12 7.5 V12.5 M12 16 h0.01" /></svg>
+      <div v-if="!apiKeyValida" class="aviso aviso--ambar aviso--leo" role="status" data-test="aviso-ia">
+        <!-- UI-10: Leo apenado en vez del ícono. Ícono anterior:
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8a5a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M12 7.5 V12.5 M12 16 h0.01" /></svg> -->
+        <LeoPersonaje estado="apenado" :tamano="56" decorativo />
         <div>
           <p class="aviso__titulo">Leo IA no está disponible por ahora</p>
           <p class="aviso__texto">Mientras tanto, puedes seguir practicando desde Inicio.</p>
@@ -153,6 +155,8 @@
             :class="mensaje.rol === 'usuario' ? 'mensaje--mio' : 'mensaje--leo'"
             data-test="chat-mensaje"
           >
+            <!-- UI-10: si Leo no pudo responder, aparece apenado junto a ese mensaje -->
+            <LeoPersonaje v-if="mensaje.error" class="mensaje__leo" estado="apenado" :tamano="34" decorativo data-test="chat-leo-apenado" />
             <div class="mensaje__globo">
               <p class="mensaje__texto">{{ mensaje.texto }}</p>
               <p class="mensaje__hora">{{ mensaje.hora }}</p>
@@ -256,13 +260,18 @@
 
     <!-- Resultado del diagnóstico -->
     <LeoPanelDetalle :abierto="modalDiagnosticoVisible" titulo="Tu diagnóstico" @cerrar="cerrarModalDiagnostico">
+      <!-- UI-10: Leo esperando (con nube) en vez del círculo que gira. La carga anterior:
       <div v-if="cargandoDiagnostico" class="estado-carga" role="status" data-test="diagnostico-cargando">
         <svg class="estado-carga__giro giro" viewBox="0 0 24 24" fill="none" stroke="#2568c4" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3 a9 9 0 1 1 -9 9" /></svg>
         <p>Leo está revisando tus respuestas…</p>
       </div>
+      -->
+      <LeoCarga v-if="cargandoDiagnostico" mensaje="Leo está revisando tus respuestas…" data-test="diagnostico-cargando" />
 
-      <div v-else-if="errorDiagnostico" class="aviso aviso--ambar" role="alert" data-test="diagnostico-error">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#8a5a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M12 7.5 V12.5 M12 16 h0.01" /></svg>
+      <div v-else-if="errorDiagnostico" class="aviso aviso--ambar aviso--leo" role="alert" data-test="diagnostico-error">
+        <!-- UI-10: Leo apenado en vez del ícono. Ícono anterior:
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8a5a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M12 7.5 V12.5 M12 16 h0.01" /></svg> -->
+        <LeoPersonaje estado="apenado" :tamano="56" decorativo />
         <div>
           <p class="aviso__titulo">No pude preparar tu diagnóstico</p>
           <p class="aviso__texto">Puede ser la conexión o que Leo esté muy ocupado. Tus respuestas siguen guardadas: inténtalo de nuevo en un momento.</p>
@@ -336,10 +345,13 @@
         </span>
       </template>
 
+      <!-- UI-10: Leo esperando (con nube) en vez del círculo que gira. La carga anterior:
       <div v-if="cargandoIA" class="estado-carga" role="status">
         <svg class="estado-carga__giro giro" viewBox="0 0 24 24" fill="none" stroke="#2568c4" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3 a9 9 0 1 1 -9 9" /></svg>
         <p>Leo está preparando otro ejercicio…</p>
       </div>
+      -->
+      <LeoCarga v-if="cargandoIA" mensaje="Leo está preparando otro ejercicio…" data-test="ejercicio-cargando" />
 
       <div v-else-if="ejercicioAleatorio" class="pregunta" data-test="ejercicio">
         <LeoEtiqueta tono="ambar" class="pregunta__habilidad">{{ textoHabilidad(ejercicioAleatorio.habilidad) }}</LeoEtiqueta>
@@ -405,6 +417,7 @@ import LeoEtiqueta from './base/LeoEtiqueta.vue'
 import LeoBarraProgreso from './base/LeoBarraProgreso.vue'
 import LeoPanelDetalle from './base/LeoPanelDetalle.vue'
 import LeoPersonaje from './base/LeoPersonaje.vue'
+import LeoCarga from './base/LeoCarga.vue' // UI-10
 import { primerNombre } from '../utils/nombre'
 
 // UI-07: íconos de trazo (mismo estilo que Inicio y Progreso)
@@ -425,7 +438,7 @@ const ANCHO_ESCRITORIO = '(min-width: 1024px)'
 
 export default {
   name: 'AsistenteIA',
-  components: { LeoTarjeta, LeoBurbuja, LeoBoton, LeoEtiqueta, LeoBarraProgreso, LeoPanelDetalle, LeoPersonaje },
+  components: { LeoTarjeta, LeoBurbuja, LeoBoton, LeoEtiqueta, LeoBarraProgreso, LeoPanelDetalle, LeoPersonaje, LeoCarga },
   props: {
     // UI-07: nombre del alumno para el saludo de Leo (lo entrega PantallaLeoIA)
     nombre: { type: String, default: '' }
@@ -634,7 +647,9 @@ export default {
           rol: 'asistente',
           // UI-07: mismo mensaje, sin emoji
           texto: 'Lo siento, hubo un error al procesar tu mensaje. ¿Puedes intentarlo de nuevo?',
-          hora: this.obtenerHora()
+          hora: this.obtenerHora(),
+          error: true // UI-10: solo cambia cómo se ve (Leo apenado); no se envía a Gemini
+
         })
       } finally {
         this.cargandoChat = false
@@ -898,6 +913,9 @@ export default {
   line-height: 1.4;
 }
 .aviso svg { width: 1.5rem; height: 1.5rem; flex-shrink: 0; }
+/* UI-10: aviso con Leo apenado en lugar del ícono */
+.aviso--leo { align-items: center; }
+.aviso--leo > svg.leo-p { width: auto; height: auto; }
 .aviso--ambar { background: #fff3cf; border: 1px solid #ecd28a; color: #3a4960; }
 .aviso--verde { background: #e3f3ea; border: 1px solid #b9dcc7; color: #1f4d33; }
 .aviso--corto { color: #5c3d00; }
@@ -984,6 +1002,7 @@ export default {
 .mensaje { display: flex; }
 .mensaje--mio { justify-content: flex-end; }
 .mensaje--leo { justify-content: flex-start; }
+.mensaje__leo { align-self: flex-end; flex-shrink: 0; margin-right: 0.375rem; } /* UI-10 */
 .mensaje__globo { max-width: 85%; padding: 0.6875rem 0.8125rem; }
 .mensaje--leo .mensaje__globo { background: #ffffff; border: 1px solid #d9e4f1; border-radius: 1rem 1rem 1rem 0.25rem; }
 .mensaje--mio .mensaje__globo { background: #2568c4; border-radius: 1rem 1rem 0.25rem 1rem; }

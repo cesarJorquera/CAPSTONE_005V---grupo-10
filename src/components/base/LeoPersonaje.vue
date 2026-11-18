@@ -1,6 +1,8 @@
 <template>
   <!-- UI-09: Leo de cuerpo entero (mismo dibujo del PNG, ahora con brazos y piernas).
        Estados: neutro, saluda, piensa, explica, acierto, animo, celebra y logro (gafas de sol y pulgar arriba).
+       UI-10: carga (sonríe, con puntos y nube de pensamiento mientras la app espera), apenado (algo falló en
+       la app; nunca por un error del alumno) y piensa con cara de "déjame pensar" (ceja alzada, mano en el mentón).
        Animaciones solo al cambiar de estado, al entrar (si se pide) o al tocarlo, una vez; el único bucle es
        el parpadeo suave y los puntos de "pensando" mientras se espera. Todo se apaga con el interruptor de
        Ajustes (<html data-animaciones="off">) y con "reducir movimiento" del sistema.
@@ -35,12 +37,18 @@
 
         <!-- Ojos -->
         <g v-if="g.ojos === 'punto'" :class="quieto ? '' : 'lp-parpadeo'" fill="#404450">
-          <circle cx="61" :cy="g.ojoY" r="4.6" />
-          <ellipse :class="a.ojoDer" cx="83" :cy="g.ojoY" rx="4.6" ry="4.6" />
+          <circle :cx="61 + g.ojoX" :cy="g.ojoY" r="4.6" />
+          <ellipse :class="a.ojoDer" :cx="83 + g.ojoX" :cy="g.ojoY + g.ojoDerDy" rx="4.6" ry="4.6" />
         </g>
         <g v-else fill="none" stroke="#404450" stroke-width="3.6" stroke-linecap="round">
           <path d="M55 88 Q61 80 67 88" />
           <path d="M77 88 Q83 80 89 88" />
+        </g>
+
+        <!-- UI-10: cejas de "déjame pensar" (una alzada, la otra recta) -->
+        <g v-if="g.cejas" fill="none" stroke="#404450" stroke-width="3.2" stroke-linecap="round">
+          <path d="M54 74 Q61 67 68 72" />
+          <path d="M78 77 Q84 75.5 90 77" />
         </g>
 
         <!-- Boca -->
@@ -96,6 +104,8 @@
             <g :class="a.brazoDer">
               <path :d="g.bd" />
               <circle :cx="g.bdX" :cy="g.bdY" r="5.2" fill="#404450" stroke="none" />
+              <!-- UI-10: dedo índice levantado junto al mentón (piensa) -->
+              <path v-if="g.dedo" d="M83 108 L86 101" stroke-width="4" />
             </g>
           </g>
         </template>
@@ -108,6 +118,16 @@
       <circle cx="11" cy="41" r="3.6" />
       <circle cx="6" cy="27" r="4.8" />
     </g>
+    <!-- UI-10: nube de pensamiento al final de los puntos (carga) -->
+    <path
+      v-if="g.nube"
+      :class="quieto ? '' : 'lp-nube'"
+      d="M-20 17 Q-30 9 -20 2 Q-19 -9 -6 -7 Q1 -16 12 -7 Q24 -6 20 6 Q26 16 12 18 L-14 18 Q-18 18 -20 17 Z"
+      fill="#ffffff"
+      stroke="#9db7dd"
+      stroke-width="2.6"
+      stroke-linejoin="round"
+    />
 
     <!-- Estrellas (celebrar, y el logro de una unidad) -->
     <g v-if="g.chispas || chispas" :class="a.chispas" fill="#ffc107" stroke="#d99100" stroke-width="0.8" stroke-linejoin="round">
@@ -120,19 +140,24 @@
 </template>
 
 <script>
-const ESTADOS = ['neutro', 'saluda', 'piensa', 'explica', 'acierto', 'animo', 'celebra', 'logro']
+const ESTADOS = ['neutro', 'saluda', 'piensa', 'explica', 'acierto', 'animo', 'celebra', 'logro', 'carga', 'apenado']
 
 const BASE = {
   bi: 'M30 96 Q22 108 21 118', biX: 21, biY: 120,
   bd: 'M110 96 Q118 108 119 118', bdX: 119, bdY: 120,
   ojos: 'punto', ojoY: 86, boca: 'M64 98 Q72 105 80 98', bocaRelleno: false,
-  puntos: false, chispas: false, gafas: false
+  puntos: false, chispas: false, gafas: false,
+  ojoX: 0, ojoDerDy: 0, cejas: false, dedo: false, nube: false
 }
 
 const GEOMETRIA = {
   neutro: {},
   saluda: { bd: 'M110 94 Q121 86 123 70', bdX: 123, bdY: 67 },
-  piensa: { bd: 'M110 98 Q120 110 101 113', bdX: 99, bdY: 113, ojoY: 83, boca: 'M66 101 Q72 99 78 101', puntos: true },
+  // UI-10: "piensa" pasa a la cara de "déjame pensar". La de UI-09 queda abajo, comentada (hoy es "apenado" con puntos):
+  // piensa: { bd: 'M110 98 Q120 110 101 113', bdX: 99, bdY: 113, ojoY: 83, boca: 'M66 101 Q72 99 78 101', puntos: true },
+  piensa: { bd: 'M110 100 Q104 118 84 112', bdX: 82, bdY: 111, ojoX: 2, ojoY: 82, ojoDerDy: 1, boca: 'M64 101 Q71 101 79 98', cejas: true, dedo: true },
+  carga: { bd: 'M110 98 Q120 110 101 113', bdX: 99, bdY: 113, ojoY: 83, boca: 'M63 98 Q72 106 81 98', puntos: true, nube: true },
+  apenado: { bd: 'M110 98 Q120 110 101 113', bdX: 99, bdY: 113, ojoY: 83, boca: 'M66 101 Q72 99 78 101' },
   explica: { bd: 'M110 96 Q123 96 131 88', bdX: 133, bdY: 86, boca: 'M64 97 Q72 107 80 97 Z', bocaRelleno: true },
   acierto: { bi: 'M30 94 Q21 84 21 72', biX: 21, biY: 69, bd: 'M110 94 Q119 84 119 72', bdX: 119, bdY: 69, ojos: 'arco', boca: 'M62 96 Q72 110 82 96 Z', bocaRelleno: true },
   animo: { bd: 'M110 98 Q123 102 127 93', bdX: 128, bdY: 91, boca: 'M65 98 Q72 103 79 98' },
@@ -149,9 +174,11 @@ const ANIMACION = {
   acierto: { cuerpo: 'lp-salta', borla: 'lp-borla' },
   animo: { cuerpo: 'lp-inclina', brazoDer: 'lp-empuja' },
   celebra: { cuerpo: 'lp-salta2', brazoIzq: 'lp-agita-i', brazoDer: 'lp-agita-d', chispas: 'lp-chispa', borla: 'lp-borla' },
+  carga: {},
+  apenado: { cuerpo: 'lp-ladea' },
   logro: { entra: 'lp-entra', gafas: 'lp-gafas', brazoDer: 'lp-pulgar', cuerpo: 'lp-salta-tarde', borla: 'lp-borla-tarde', brillo: 'lp-brillo', chispas: 'lp-chispa-tarde' }
 }
-const DURACION = { neutro: 0, saluda: 1300, piensa: 1100, explica: 1700, acierto: 800, animo: 1000, celebra: 1500, logro: 2300 }
+const DURACION = { neutro: 0, saluda: 1300, piensa: 1100, explica: 1700, acierto: 800, animo: 1000, celebra: 1500, logro: 2300, carga: 0, apenado: 1100 }
 
 // Gestos al tocar a Leo: uno distinto cada vez, en orden
 const GESTOS = [
@@ -170,7 +197,8 @@ const entradaSesion = { saludoHecho: false, ultimoGesto: -1 }
 const ETIQUETAS = {
   neutro: 'Leo', saluda: 'Leo saludando', piensa: 'Leo pensando', explica: 'Leo explicando',
   acierto: 'Leo feliz por tu respuesta', animo: 'Leo dándote ánimo', celebra: 'Leo celebrando',
-  logro: 'Leo con gafas de sol levantando el pulgar'
+  logro: 'Leo con gafas de sol levantando el pulgar',
+  carga: 'Leo esperando', apenado: 'Leo apenado'
 }
 
 export default {
@@ -337,6 +365,7 @@ export default {
 .lp-puntos circle { animation: lp-puntos 1.2s ease-in-out infinite; }
 .lp-puntos circle:nth-child(2) { animation-delay: 0.2s; }
 .lp-puntos circle:nth-child(3) { animation-delay: 0.4s; }
+.lp-nube { transform-box: fill-box; transform-origin: center; animation: lp-nube 1.2s ease-in-out 0.6s infinite; }
 
 @keyframes lp-saludo { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-22deg); } 45% { transform: rotate(10deg); } 70% { transform: rotate(-22deg); } }
 @keyframes lp-explica { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(4px, -3px); } }
@@ -356,6 +385,7 @@ export default {
 @keyframes lp-pulgar { from { transform: rotate(75deg); } to { transform: rotate(0); } }
 @keyframes lp-brillo { 0% { opacity: 0; transform: translate(-6px, 6px); } 40% { opacity: 1; } 100% { opacity: 0.45; transform: translate(0, 0); } }
 @keyframes lp-parpadeo { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes lp-nube { 0%, 100% { opacity: 0.55; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1); } }
 @keyframes lp-puntos { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
 
 /* Accesibilidad: sin movimiento si el sistema lo pide, si se apaga en Ajustes o si se pide "quieto" */

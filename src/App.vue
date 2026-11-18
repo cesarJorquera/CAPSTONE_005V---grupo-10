@@ -3,12 +3,23 @@
     <!-- Mientras se revisa si hay una sesión guardada (evita mostrar el login un instante) -->
     <!-- Con el nombre ya conocido, saluda mientras llega el progreso (sustituye a la pantalla
          de bienvenida, que aparecía unos instantes al entrar y tenía un botón "continuar") -->
+    <!-- UI-10: solo quien ya tiene la sesión guardada ve esta espera (sin sesión no se muestra nada
+         antes de la landing o el login), y solo si dura más de 300 ms. El saludo anterior queda abajo:
     <div v-if="!$route.name" class="text-center text-gray-500 py-20" role="status" aria-live="polite">
       <template v-if="playerName">
         <p class="text-2xl font-bold text-gray-700 mb-2">¡Hola, {{ playerName }}! 👋</p>
         <p class="animate-pulse">Cargando tu progreso…</p>
       </template>
       <p v-else class="animate-pulse">Cargando…</p>
+    </div>
+    -->
+    <div v-if="!$route.name" class="bg-leo-fondo min-h-screen" data-test="arranque">
+      <LeoCarga
+        v-if="usuario"
+        variante="pantalla"
+        :titulo="primerNombre ? 'Hola, ' + primerNombre : ''"
+        mensaje="Estamos cargando tu avance…"
+      />
     </div>
 
     <router-view v-else v-slot="{ Component, route }">
@@ -44,10 +55,19 @@
           <MenuPrincipal v-if="!route.meta.sinMenu" :es-docente="esDocente" @salir="salir" />
           <div class="flex-1 min-w-0" :class="{ 'pb-24 lg:pb-0': !route.meta.sinMenu }">
             <div v-if="errorProgreso" class="max-w-4xl mx-auto px-4 pt-4">
+              <!-- UI-10: mismo mensaje, con Leo apenado. El aviso anterior:
               <p class="rounded-xl border border-red-300 bg-red-50 p-4 text-red-800" role="alert">
                 No se pudo cargar tu progreso desde la nube. Tus datos no se han reemplazado.
                 Revisa tu conexión e intenta iniciar sesión nuevamente.
               </p>
+              -->
+              <LeoVacio
+                tipo="error"
+                compacto
+                titulo="No se pudo cargar tu progreso"
+                texto="Tus datos no se han reemplazado. Revisa tu conexión e intenta iniciar sesión nuevamente."
+                data-test="error-progreso"
+              />
             </div>
 
             <!-- Menú principal: ocupa todo el ancho -->
@@ -77,6 +97,9 @@
         </div>
       </div>
     </router-view>
+
+    <!-- UI-10: al abrir un juego, mientras se prepara la partida guardada (solo si tarda más de 300 ms) -->
+    <LeoCarga v-if="abriendoJuego" variante="superpuesta" mensaje="Preparando tu juego…" data-test="abriendo-juego" />
 
     <!-- MEJ-03: aviso de confirmación al salir de algo en curso (juego, actividad) -->
     <ModalConfirmacion />
@@ -112,6 +135,8 @@ import { getAllTextIds, getNextText } from './data/game1_texts'
 import { createGameManager } from './utils/gameManager'
 import { cargarProgresoNube } from './utils/supabaseProgress'
 import ModalConfirmacion from './components/ModalConfirmacion.vue'
+import LeoCarga from './components/base/LeoCarga.vue'
+import LeoVacio from './components/base/LeoVacio.vue'
 import { confirmarSiHayAvance, omitirConfirmacion } from './utils/confirmarSalida'
 import { TEXTOS_JUEGO2, rutaInicio, recordarDestino } from './router'
 import { estadoSesion, marcarSesionLista } from './router/estadoSesion'
@@ -122,7 +147,9 @@ export default {
     AppNavbar,
     MenuPrincipal,
     mascota,
-    ModalConfirmacion
+    ModalConfirmacion,
+    LeoCarga,
+    LeoVacio
   },
   data() {
     return {
@@ -138,7 +165,9 @@ export default {
       cargandoLogin: false,
       errorLogin: '',
       dejarDeEscucharSesion: null,
-      promesaEntrada: null // carga de perfil y progreso en curso (evita cargarlos dos veces)
+      promesaEntrada: null, // carga de perfil y progreso en curso (evita cargarlos dos veces)
+      abriendoJuego: false, // UI-10: se está preparando la partida de un juego
+      quitarAvisosRuta: [] // UI-10: para dejar de escuchar al router al cerrar
     }
   },
   computed: {
@@ -157,13 +186,31 @@ export default {
     // Texto que indica la URL (/juego/1/:textId, /juego/2/:textId)
     textIdRuta() {
       return this.$route.params.textId || ''
+    },
+    // UI-10: "Hola, Ana" en la espera del arranque. Mientras llega el perfil se usa el nombre de la
+    // cuenta (el mismo que muestra nombreVisible sin perfil), para no cambiar el saludo a mitad de la espera.
+    primerNombre() {
+      const nombre = this.playerName || (this.usuario ? nombreVisible(null, this.usuario) : '')
+      return String(nombre || '').trim().split(/\s+/)[0]
     }
   },
   mounted() {
     this.iniciarAutenticacion()
+    // UI-10: solo muestra la espera al abrir un juego; no cambia cómo se navega ni qué se carga
+    if (this.$router) {
+      this.quitarAvisosRuta = [
+        // beforeEach (no beforeResolve): así se marca antes de que el router espere la partida guardada
+        this.$router.beforeEach(to => {
+          if (typeof to.meta.avance === 'function') this.abriendoJuego = true
+        }),
+        this.$router.afterEach(() => { this.abriendoJuego = false }),
+        this.$router.onError(() => { this.abriendoJuego = false })
+      ]
+    }
   },
   beforeUnmount() {
     if (this.dejarDeEscucharSesion) this.dejarDeEscucharSesion()
+    this.quitarAvisosRuta.forEach(quitar => quitar())
   },
   methods: {
     // ============================================

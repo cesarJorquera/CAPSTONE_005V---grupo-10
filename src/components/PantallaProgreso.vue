@@ -9,6 +9,18 @@
       <p class="progreso__bajada">{{ bajada }}</p>
     </header>
 
+    <!-- UI-10: si no se pudo leer el progreso (antes solo quedaba en la consola y se veía todo en cero) -->
+    <LeoVacio
+      v-if="errorCarga"
+      tipo="error"
+      compacto
+      titulo="No pudimos leer tu progreso"
+      texto="Lo que ves puede estar incompleto. Inténtalo de nuevo en un momento."
+      accion="Intentar de nuevo"
+      data-test="progreso-error"
+      @accion="reintentarCarga"
+    />
+
     <!-- Resumen + próximo logro -->
     <div class="progreso__fila">
       <LeoTarjeta como="section" class="resumen" aria-labelledby="resumen-titulo" data-test="resumen-nivel">
@@ -140,6 +152,8 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="#b07a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="iconos.brote" /></svg>
           </span>
           <h2 id="crecer-titulo" class="seccion__titulo">Para seguir creciendo</h2>
+          <!-- UI-10: Leo con cara de "déjame pensar", junto a los consejos -->
+          <LeoPersonaje v-if="debilidades.length" class="analisis__leo" estado="piensa" :tamano="56" decorativo />
         </div>
         <ul v-if="debilidades.length" class="analisis__lista">
           <!-- Sin porcentajes aquí: el consejo dice qué hacer, sin marcar lo que falta -->
@@ -203,6 +217,8 @@ import LeoTarjeta from './base/LeoTarjeta.vue'
 import LeoBarraProgreso from './base/LeoBarraProgreso.vue'
 import LeoBurbuja from './base/LeoBurbuja.vue'
 import LeoPanelDetalle from './base/LeoPanelDetalle.vue'
+import LeoVacio from './base/LeoVacio.vue' // UI-10
+import LeoPersonaje from './base/LeoPersonaje.vue' // UI-10
 import unidad1 from '../data/ruta/unidad1'
 import { estadoSesion } from '../router/estadoSesion'
 import { animacionesActivas } from '../utils/preferencias'
@@ -240,7 +256,7 @@ const CLAVE_ENTRADA = 'leo-perfecto-progreso-animado'
 export default {
   name: 'PantallaProgreso',
 
-  components: { RankingGlobal, LeoBoton, LeoTarjeta, LeoBarraProgreso, LeoBurbuja, LeoPanelDetalle },
+  components: { RankingGlobal, LeoBoton, LeoTarjeta, LeoBarraProgreso, LeoBurbuja, LeoPanelDetalle, LeoVacio, LeoPersonaje },
 
   props: {
     playerName: {
@@ -255,6 +271,7 @@ export default {
 
   data() {
     return {
+      errorCarga: false, // UI-10: no se pudo leer el progreso
       // Estadísticas del jugador
       juegosCompletados: 0,
       efectividad: 0,
@@ -478,6 +495,7 @@ export default {
       this.prepararVista()
     } catch (error) {
       console.error('❌ Error al inicializar la sección Progreso:', error)
+      this.errorCarga = true // UI-10
     }
   },
 
@@ -589,7 +607,20 @@ export default {
         })
       } catch (error) {
         console.error('❌ Error al cargar datos del jugador:', error)
+        this.errorCarga = true // UI-10
         this.resetearEstadisticas()
+      }
+    },
+
+    // UI-10: "Intentar de nuevo" del aviso de error (vuelve a leer el mismo progreso)
+    reintentarCarga() {
+      this.errorCarga = false
+      try {
+        if (!this.gameManager) this.gameManager = createGameManager(this.playerName)
+        this.loadPlayerData()
+      } catch (error) {
+        console.error('❌ Error al reintentar la carga de Progreso:', error)
+        this.errorCarga = true
       }
     },
 
@@ -966,6 +997,7 @@ export default {
 .analisis { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .analisis__tarjeta { display: flex; flex-direction: column; gap: 0.875rem; padding: 1.125rem; }
 .analisis__cabecera { display: flex; align-items: center; gap: 0.75rem; }
+.analisis__leo { margin-left: auto; flex-shrink: 0; margin-top: -0.5rem; } /* UI-10 */
 .analisis__lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.875rem; }
 .analisis__item { display: flex; flex-direction: column; gap: 0.25rem; padding-top: 0.875rem; border-top: 1px solid #e8eef6; }
 .analisis__item:first-child { padding-top: 0; border-top: 0; }

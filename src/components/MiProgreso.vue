@@ -58,6 +58,20 @@
       </div>
     </LeoTarjeta>
 
+    <!-- UI-10: aviso de Leo si no se pudo abrir un juego (antes era un alert del navegador) -->
+    <LeoVacio
+      v-if="avisoInicio"
+      ref="avisoInicio"
+      tipo="error"
+      :titulo="avisoInicio.titulo"
+      :texto="avisoInicio.texto"
+      :accion="avisoInicio.reintentar ? 'Intentar de nuevo' : ''"
+      cerrable
+      data-test="aviso-inicio"
+      @accion="reintentarUnidad"
+      @cerrar="avisoInicio = null"
+    />
+
     <!-- Unidades -->
     <section class="unidades" aria-labelledby="unidades-titulo">
       <h2 id="unidades-titulo" class="unidades__titulo">Unidades de aprendizaje</h2>
@@ -193,6 +207,24 @@
       </template>
     </LeoPanelDetalle>
 
+    <!-- UI-10: pregunta antes de repetir un juego con 100% (antes era un alert que solo tenía "Aceptar") -->
+    <LeoPanelDetalle
+      :abierto="!!repetirPendiente"
+      titulo="¿Repetir este juego?"
+      @cerrar="cancelarRepetir"
+    >
+      <div v-if="repetirPendiente" class="repetir" data-test="panel-repetir">
+        <LeoPersonaje estado="explica" :tamano="76" animar-al-entrar decorativo />
+        <p class="repetir__texto">Ya tienes 100% en «{{ repetirPendiente.nombre }}». Puedes repetirlo para practicar cuando quieras.</p>
+      </div>
+      <template #pie>
+        <div class="repetir__acciones">
+          <LeoBoton ancho data-test="repetir-si" @click="confirmarRepetir">Repetir</LeoBoton>
+          <LeoBoton ancho variante="secundario" data-test="repetir-volver" @click="cancelarRepetir">Volver</LeoBoton>
+        </div>
+      </template>
+    </LeoPanelDetalle>
+
     <!-- UI-09: logro grande de Leo (Unidad 1, un juego completo o Unidad 2), una sola vez cada uno -->
     <LogroLeo v-if="logroActual" :logro="logroActual" @cerrar="cerrarLogro" />
   </div>
@@ -213,6 +245,8 @@ import LeoBarraProgreso from './base/LeoBarraProgreso.vue'
 import LeoBurbuja from './base/LeoBurbuja.vue'
 import LeoPanelDetalle from './base/LeoPanelDetalle.vue'
 import LogroLeo from './LogroLeo.vue' // UI-09
+import LeoVacio from './base/LeoVacio.vue' // UI-10
+import LeoPersonaje from './base/LeoPersonaje.vue' // UI-10
 import { siguienteLogro, marcarLogroVisto, textoLogro } from '../utils/logrosLeo' // UI-09
 import unidad1 from '../data/ruta/unidad1'
 import { estadoDeNodos } from './ruta/progresoRuta'
@@ -235,7 +269,7 @@ const CLAVE_ENTRADA = 'leo-perfecto-inicio-animado'
 export default {
   name: 'MiProgreso',
 
-  components: { LeoBoton, LeoTarjeta, LeoEtiqueta, LeoBarraProgreso, LeoBurbuja, LeoPanelDetalle, LogroLeo },
+  components: { LeoBoton, LeoTarjeta, LeoEtiqueta, LeoBarraProgreso, LeoBurbuja, LeoPanelDetalle, LogroLeo, LeoVacio, LeoPersonaje },
   // components: { AsistenteIA }, // UI-04: ya no se usa aquí (ver PantallaLeoIA.vue)
   // ============================================
   // PROPS
@@ -275,7 +309,9 @@ export default {
       alCambiarAncho: null,
       conEntrada: false, // animación de entrada (una vez por sesión del navegador)
       progresoU2: 0,
-      logroActual: null // UI-09: logro que se está mostrando
+      logroActual: null, // UI-09: logro que se está mostrando
+      avisoInicio: null, // UI-10: { titulo, texto, reintentar, unidadId } si no se pudo abrir un juego
+      repetirPendiente: null // UI-10: juego con 100% que espera la respuesta de "¿Repetir?"
     };
   },
   
@@ -568,13 +604,15 @@ export default {
      * @param {number} unidadId - ID de la unidad a iniciar
      */
     iniciarUnidad(unidadId) {
+      this.avisoInicio = null // UI-10
       try {
         this.playSound('click')
 
         // Verificar GameManager
         if (!this.gameManager) {
           console.error('❌ GameManager no disponible')
-          alert('❌ Error al iniciar juego')
+          // alert('❌ Error al iniciar juego') // UI-10: ahora es un aviso de Leo en la pantalla
+          this.mostrarAvisoInicio(unidadId, 'error')
           return
         }
 
@@ -582,7 +620,8 @@ export default {
         const juegoSeleccionado = this.gameManager.seleccionarJuegoInteligente(unidadId)
 
         if (!juegoSeleccionado) {
-          alert('❌ No hay juegos disponibles en esta unidad')
+          // alert('❌ No hay juegos disponibles en esta unidad') // UI-10: aviso de Leo en la pantalla
+          this.mostrarAvisoInicio(unidadId, 'sinJuegos')
           return
         }
 
@@ -590,11 +629,28 @@ export default {
         console.log('🎮 Juego seleccionado:', juegoSeleccionado)
         
         if (juegoSeleccionado.esRepeticion) {
-          alert(juegoSeleccionado.mensaje)
+          // alert(juegoSeleccionado.mensaje)
+          // UI-10: el alert preguntaba "¿Quieres repetir?" pero solo tenía "Aceptar". Ahora se pregunta
+          // de verdad; con "Repetir" se abre el mismo juego que antes (lanzarJuego).
+          this.repetirPendiente = juegoSeleccionado
+          return
         } else {
           console.log(juegoSeleccionado.mensaje)
         }
 
+        this.lanzarJuego(juegoSeleccionado)
+      } catch (error) {
+        console.error('❌ Error al iniciar unidad:', error)
+        // alert('❌ Error inesperado al iniciar juego') // UI-10: aviso de Leo en la pantalla
+        this.mostrarAvisoInicio(unidadId, 'error')
+      }
+    },
+    /**
+     * UI-10: abre el juego elegido. Es el mismo código que antes estaba al final de iniciarUnidad,
+     * separado para poder llamarlo también después de "Repetir".
+     */
+    lanzarJuego(juegoSeleccionado) {
+      try {
         // Emitir evento según el tipo de juego
         this.$nextTick(() => {
           if (juegoSeleccionado.gameId === 1) {
@@ -620,8 +676,32 @@ export default {
         console.log(`✅ Iniciando: ${juegoSeleccionado.nombre}`)
       } catch (error) {
         console.error('❌ Error al iniciar unidad:', error)
-        alert('❌ Error inesperado al iniciar juego')
+        // alert('❌ Error inesperado al iniciar juego') // UI-10: aviso de Leo en la pantalla
+        this.mostrarAvisoInicio(null, 'error')
       }
+    },
+    // UI-10: aviso de Leo cuando no se pudo abrir un juego
+    mostrarAvisoInicio(unidadId, motivo) {
+      this.avisoInicio = motivo === 'sinJuegos'
+        ? { titulo: 'Esta unidad aún no tiene juegos disponibles', texto: 'Vuelve a revisar más tarde.', reintentar: false, unidadId }
+        : { titulo: 'No pudimos abrir el juego', texto: 'Puede ser la conexión. Tu avance no se pierde: inténtalo de nuevo en un momento.', reintentar: unidadId != null, unidadId }
+      this.$nextTick(() => {
+        const el = this.$refs.avisoInicio && this.$refs.avisoInicio.$el
+        if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: animacionesActivas() ? 'smooth' : 'auto' })
+      })
+    },
+    reintentarUnidad() {
+      const unidadId = this.avisoInicio && this.avisoInicio.unidadId
+      this.avisoInicio = null
+      if (unidadId != null) this.iniciarUnidad(unidadId)
+    },
+    confirmarRepetir() {
+      const juego = this.repetirPendiente
+      this.repetirPendiente = null
+      if (juego) this.lanzarJuego(juego)
+    },
+    cancelarRepetir() {
+      this.repetirPendiente = null
     },
 
     // UI-04 — SIN USO, se deja comentado (no se borra): respondía a eventos del asistente IA, pero
@@ -736,6 +816,12 @@ export default {
 }
 .inicio__enlace:hover { color: #14233b; }
 .inicio__enlace:focus-visible { outline: 3px solid #14233b; outline-offset: 2px; border-radius: 4px; }
+
+/* UI-10: pregunta de repetir */
+.repetir { display: flex; align-items: center; gap: 0.875rem; padding: 1rem; background: #e4f0fb; border-radius: 1.125rem; }
+.repetir > :first-child { flex-shrink: 0; }
+.repetir__texto { margin: 0; font-size: 1.0625rem; line-height: 1.5; color: #14233b; }
+.repetir__acciones { display: flex; flex-direction: column; gap: 0.625rem; width: 100%; }
 
 /* Tarjeta Continuar */
 .continuar {

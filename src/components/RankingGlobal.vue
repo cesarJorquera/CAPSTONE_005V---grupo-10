@@ -13,12 +13,18 @@
         Próximamente
       </span>
     </div>
-    <p class="ranking__texto">Función en desarrollo.</p>
+    <!-- UI-10: mismo texto, con Leo al lado. Antes: <p class="ranking__texto">Función en desarrollo.</p> -->
+    <div class="ranking__vacio" data-test="ranking-vacio">
+      <LeoPersonaje :tamano="64" decorativo />
+      <p class="ranking__texto">Función en desarrollo.</p>
+    </div>
   </section>
 </template>
 
 <script>
-export default { name: 'RankingGlobal' }
+import LeoPersonaje from './base/LeoPersonaje.vue' // UI-10
+
+export default { name: 'RankingGlobal', components: { LeoPersonaje } }
 </script>
 
 <style scoped>
@@ -65,6 +71,8 @@ export default { name: 'RankingGlobal' }
   font-weight: 700;
 }
 .ranking__texto { margin: 0; font-size: 0.9375rem; color: #52627a; }
+.ranking__vacio { display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem; background: #f4f8fd; border-radius: 1rem; } /* UI-10 */
+.ranking__vacio > :first-child { flex-shrink: 0; }
 
 @media (min-width: 768px) {
   .ranking { padding: 1.5rem; }

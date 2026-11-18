@@ -27,14 +27,16 @@
         class="py-3 px-5 font-medium text-base text-gray-400 hover:text-gray-600 focus:outline-none whitespace-nowrap cursor-not-allowed"
         disabled
       >
-        👥 Estudiantes (Próximamente)
+        <!-- UI-10: sin emoji (antes: 👥) -->
+        Estudiantes (Próximamente)
       </button>
       <button
         type="button"
         class="py-3 px-5 font-medium text-base text-gray-400 hover:text-gray-600 focus:outline-none whitespace-nowrap cursor-not-allowed"
         disabled
       >
-        📈 Reportes (Próximamente)
+        <!-- UI-10: sin emoji (antes: 📈) -->
+        Reportes (Próximamente)
       </button>
     </div>
 
