@@ -9,6 +9,7 @@ Aplicación publicada: [leo-perfecto.netlify.app](https://leo-perfecto.netlify.a
 - Este repositorio contiene las evidencias académicas organizadas por fase.
 - El código fuente del sistema está en [`Fase 2/Evidencias Proyecto/Evidencias de sistema/Aplicación`](Fase%202/Evidencias%20Proyecto/Evidencias%20de%20sistema/Aplicaci%C3%B3n).
 - El repositorio de desarrollo es [cesarJorquera/leo-perfecto](https://github.com/cesarJorquera/leo-perfecto). La aplicación se integró aquí con `git subtree`, conservando el historial y la autoría de sus commits.
+- La [guía técnica y de defensa](Fase%202/Evidencias%20Proyecto/Evidencias%20de%20documentaci%C3%B3n/Manual_Tecnico_y_Guia_de_Defensa_Leo_Perfecto.md) resume arquitectura, datos, seguridad, despliegue y preguntas para la presentación.
 - Las carpetas de Fase 1 se conservan como evidencia histórica del proyecto.
 
 ## Descripción
@@ -22,9 +23,13 @@ Aplicación publicada: [leo-perfecto.netlify.app](https://leo-perfecto.netlify.a
 - Espacio docente: Leo Aula (proyección en clases) y Leo Dash (actividad diaria, precisión por habilidad y progreso por estudiante, con datos anonimizados).
 - LeoIA: asistente con inteligencia artificial (Gemini); su continuidad depende de la decisión de la clienta.
 
-**A quién va dirigido.** A estudiantes de 20 años o más que necesitan reforzar su comprensión lectora, con la facilidad de uso como base del diseño, y a la docente que acompaña su avance.
+**A quién va dirigido.** A estudiantes que necesitan practicar y reforzar la comprensión lectora, y a la docente que acompaña su avance.
 
 **Qué problema resuelve.** La práctica de comprensión lectora suele ser poco atractiva y difícil de seguir para la docente. Leo Perfecto ofrece práctica breve y motivadora desde el celular y le entrega a la docente información sobre la actividad y el desempeño por habilidad, para que pueda orientar el trabajo en clases.
+
+## Innovación y valor agregado
+
+La propuesta combina práctica lectora gamificada, una ruta progresiva por habilidades y un panel docente que resume actividad y precisión. Su valor no depende de una tecnología aislada: busca que el estudiante practique con retroalimentación y que la docente pueda usar evidencia de actividad para orientar el trabajo en clases. Las métricas actuales son técnicas y deben validarse pedagógicamente con la profesora antes de interpretarlas como dominio lector.
 
 ## Tecnologías utilizadas
 
@@ -96,6 +101,7 @@ Docente guía: Carlos Quintanilla.
 
 Se trabajó de forma iterativa con prácticas de Scrum: planificación del trabajo, desarrollo por tareas, revisión de avances y ajustes según retroalimentación.
 
+- **Justificación:** los sprints permiten entregar incrementos pequeños y revisar pronto con la docente un producto cuyo contenido, métricas y experiencia de uso se refinan con retroalimentación.
 - **Enfoque:** la Fase 1 propuso una metodología híbrida (análisis y diseño tradicionales, con EDT y carta Gantt). En la Fase 2 el equipo trabaja con Scrum en sprints de dos semanas.
 - **Ceremonias:** Sprint Planning con los tres integrantes y un Sprint Goal expresado en valor para el usuario, Daily con cuatro preguntas (avance hacia la meta, bloqueos, decisiones y plan), Sprint Review y registro de impedimentos con su impacto y la decisión tomada.
 - **Tablero Trello:** tarjetas con código por épica (CU cuentas, BD base de datos, PR progreso, JU juegos, U2 Unidad 2, PA panel docente, UI interfaz, EX inclusión, BUG, MEJ), con responsable, criterios de aceptación y evidencia.
