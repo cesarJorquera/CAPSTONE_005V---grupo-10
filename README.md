@@ -9,38 +9,22 @@ Este repositorio reúne las evidencias del proyecto APT desarrollado para CAPSTO
 - El repositorio de desarrollo es [cesarJorquera/leo-perfecto](https://github.com/cesarJorquera/leo-perfecto). La aplicación se integró aquí con `git subtree`, conservando el historial y la autoría de sus commits.
 - Las carpetas de Fase 1 se conservan como evidencia histórica del proyecto.
 
-## Tecnologías
-
-- Vue.js 3, JavaScript y Vue Router
-- Tailwind CSS
-- Supabase: autenticación, PostgreSQL y actualizaciones en tiempo real
-- Netlify para el despliegue de la aplicación
 
 ## Ejecución local
 
 Requiere Node.js y npm. En PowerShell:
 
-```powershell
-cd "Fase 2\Evidencias Proyecto\Evidencias de sistema\Aplicación"
-npm ci
-Copy-Item .env.example .env.local
-```
-
 Configura en `.env.local` las variables `VUE_APP_SUPABASE_URL` y `VUE_APP_SUPABASE_ANON_KEY` con los valores autorizados del proyecto. No agregues credenciales al repositorio.
 
 ```powershell
 npm run serve
-npm run lint
-npm run build
 ```
 
-El servidor local queda disponible en `http://localhost:8080`.
+## Equipo 
 
-## Equipo y responsabilidades
-
-- **César Jorquera:** integración del sistema, Unidad 2 y dashboard docente.
-- **Andrés Quiroz:** interfaz y experiencia de usuario, incluidos estados de carga y componentes de Leo.
-- **Cristian Matus:** arquitectura de datos, autenticación e integración de servicios de IA.
+- **César Jorquera:** 
+- **Andrés Quiroz:** 
+- **Cristian Matus:** 
 
 ## Metodología
 
