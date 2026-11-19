@@ -1,8 +1,10 @@
 # Leo Perfecto — guía del proyecto y contexto técnico
 
-> Documento canónico de producto y código. Describe el estado del repositorio al
-> 5 de noviembre de 2026. Si el código cambia, actualizar esta guía en el mismo
-> trabajo. No contiene credenciales ni datos reales de estudiantes.
+> Referencia técnica del producto y el código, revisada el 19 de noviembre de
+> 2026. La [guía técnica y de defensa](../../../Evidencias%20de%20documentaci%C3%B3n/Manual_Tecnico_y_Guia_de_Defensa_Leo_Perfecto.md)
+> resume la arquitectura y el estado que el equipo debe explicar. El código es
+> la fuente de verdad; este documento no verifica por sí solo el estado remoto
+> de Supabase o Netlify. No contiene credenciales ni datos reales de estudiantes.
 
 ## 1. Qué es el proyecto
 
@@ -48,7 +50,7 @@ pedagógico validado con la profesora.
   Google, jugar y comprobar el registro en Supabase; abandonar una partida y
   comprobar su sesión y respuesta.
 
-### Dashboard conectado; refinamientos locales pendientes de aplicar en Supabase
+### Dashboard docente
 
 - Leo Dash consulta un snapshot agregado mediante la función
   `leer_dashboard_docente`, muestra actividad, precisión inicial, respuestas
@@ -68,10 +70,10 @@ pedagógico validado con la profesora.
   docentes y la función RPC. Es un piloto global: una cuenta con `rol =
   'docente'` puede consultar a todos los perfiles con `rol = 'alumno'` y su
   propio perfil para probar sus actividades; no hay cursos ni matrículas para
-  limitar el alcance. Debe aplicarse y probarse en el proyecto Supabase
-  compartido. El archivo local de 005 incluye los cambios de seudónimos y
-  racha; hay que volver a ejecutarlo en el proyecto compartido para que el RPC
-  entregue esos datos.
+  limitar el alcance. La migración `006_teacher_dashboard_daily_activity.sql`
+  agrega la actividad diaria. Antes de la defensa, verificar en el proyecto
+  Supabase compartido que ambas funciones están desplegadas y devuelven los
+  datos esperados; el código local no demuestra el estado remoto.
 - La precisión y los conteos de intentos se calculan desde las respuestas
   persistidas. Las categorías pedagógicas siguen siendo etiquetas preliminares,
   no una medición validada con la profesora. No se guardan logros como filas:
@@ -250,7 +252,8 @@ apunta al contenido que reside en el frontend.
 - Las respuestas solo se pueden insertar en una partida activa del mismo
   usuario. Su lectura se limita al propietario de la sesión.
 - No hay permiso para que un alumno vea datos de otro alumno.
-- No hay una política docente que habilite lectura de cursos/estudiantes.
+- Existe una política docente de piloto para consultar perfiles, sesiones y
+  respuestas; el alcance es global y aún no está segmentado por cursos.
 - `VUE_APP_SUPABASE_ANON_KEY` es una clave pública de cliente; RLS es la
   frontera de acceso. Nunca incluir `service_role` en el frontend.
 - La conexión se configura en `.env.local` durante el desarrollo y en variables
@@ -314,18 +317,9 @@ tiempo y cómo presentar evidencia suficiente.
 
 - `src/main.js`: crea la app Vue, importa CSS global y monta `App.vue` en
   `#app`.
-- `src/App.vue`: router de pantallas manual y coordinador de autenticación,
-  perfil, progreso y navegación. Estado principal: `currentScreen`,
-  `playerName`, IDs actuales de contenido, `completedTexts`, `showProgreso`,
-  `userProgress`, `usuario`, `perfil`, indicadores y errores de carga.
-  Métodos de autenticación: `iniciarAutenticacion`, `entrar`, `entrarConSesion`,
-  `salir`, `volverAlLogin`, `irAlPanelDocente`. Métodos de progreso y
-  navegación: `loadUserProgress`, `getNextAvailableText`, `goToWelcome`,
-  `goToInstructions`, `startGame`, `goToQuestions`, `handleGame1Continue`,
-  `goToDragDropRules`, `goToDragDrop`, `handleTryNextText`, `restartGame`,
-  `goToProgreso`, `closeProgreso`, `handleStartGame1` a `handleStartGame4`,
-  `getNextGame2Text` y `handleTryNextGame2Text`. La pantalla docente es una
-  vista provisional.
+- `src/App.vue`: componente raíz que integra las pantallas y el estado de
+  autenticación y perfil. Las rutas se declaran en `src/router/index.js`; los
+  permisos de datos deben aplicarse en Supabase y no solo en la interfaz.
 - `src/components/Navbar.vue`: navegación superior; emite acciones de progreso,
   panel docente y cierre de sesión según props.
 - `src/components/pant_login.vue`: vista de login; `acepta` guarda el
@@ -493,10 +487,10 @@ Para producción, configurar en Netlify las variables `VUE_APP_SUPABASE_URL`,
 la URL de publicación esté configurada en Supabase Auth, tanto como Site URL
 como en Redirect URLs cuando corresponda.
 
-La URL de producción reportada por el equipo es
-<https://frabjous-mooncake-af96b6.netlify.app/>. Si se cambia el nombre del
-sitio en Netlify, actualizar esta referencia, los enlaces compartidos/QR y las
-URLs autorizadas de Supabase Auth.
+La URL pública verificada para la aplicación es
+<https://leo-perfecto.netlify.app/>. Antes de una exposición, comprobar que el
+sitio y el inicio de sesión funcionan en el entorno remoto y que las URL de
+retorno están autorizadas en Supabase Auth.
 
 ## 10. Historial de persistencia y migraciones Supabase
 
@@ -536,7 +530,7 @@ trabajo que no se implementó:
 | BD-02 | Aplicar perfiles existentes y migraciones `002` (sesiones) y `003` (catálogo, respuestas, estados, trigger y RLS). No incluye migrar textos ni añadir campos personales/ranking. | Hecha según aplicación y prueba manual reportadas. Commits `5e0ab67`, `265c18d`. |
 | BD-03 | Seed de textos estáticos. No se hizo ni se requiere para la persistencia actual; reevaluar si se necesita contenido editable por docente. | Cancelada/fuera del sprint, no marcar como hecha. |
 | BD-04 | Contrato técnico: una partida en `game_sessions`, respuestas individuales en `game_responses`, estados completada/abandonada y clasificación preliminar. No equivale a modelo pedagógico validado. | Hecha para los juegos actuales. Commit `265c18d`. |
-| BD-05 | Medir actividad con sesiones y respuestas, incluyendo precisión al primer intento, habilidades técnicas, actividad reciente y resúmenes derivados. No persiste logros ni visitas. | Primera versión aplicada y reportada operativa. Reaplicar `005_teacher_dashboard.sql` para las etiquetas anónimas y la racha corregida. |
+| BD-05 | Medir actividad con sesiones y respuestas, incluyendo precisión al primer intento, habilidades técnicas, actividad reciente y resúmenes derivados. No persiste logros ni visitas. | La implementación está en las migraciones `005` y `006`. Verificar las funciones y permisos en el proyecto remoto antes de afirmar que esa versión está desplegada. |
 | PR-01 | Los juegos crean sesiones y registran respuestas en Supabase; completar o abandonar conserva el estado y respuestas existentes. | Hecha según prueba manual reportada. Commits `5e0ab67`, `265c18d`. |
 | PR-02 | El progreso nuevo se descarga al restaurar/iniciar la sesión de la cuenta. El historial antiguo de `localStorage` no se importó. | Hecha para descarga nueva; migración histórica excluida. Commit `265c18d`. |
 | PR-03 | Ranking global eliminado del alcance. | Cancelada; sin commit. |
@@ -548,12 +542,11 @@ personal y el dashboard docente derivan algunos logros de sesiones/respuestas;
 el aviso de logros de Inicio aún incluye la lógica local existente. Las partidas
 permiten contar actividad y abandonos; no registran un ingreso sin actividad.
 
-La primera versión de `005_teacher_dashboard.sql` se aplicó al proyecto
-Supabase compartido. La versión actualizada debe ejecutarse de nuevo para que
-la RPC incluya la cuenta docente autenticada como cuenta de prueba. El usuario
-reportó que ya ve métricas de alumnos; falta confirmar la actividad propia y la
-recepción de cambios Realtime. El acceso es global hasta implementar cursos y
-matrículas.
+El equipo informó haber ejecutado una migración docente en el proyecto Supabase
+compartido. No se verificó desde este documento la versión remota ni la
+recepción de Realtime; antes de la defensa, comprobar `leer_dashboard_docente`,
+`leer_actividad_diaria_docente` y el comportamiento con una cuenta docente. El
+acceso es global hasta implementar cursos y matrículas.
 
 ### Texto de evidencia sugerido para BD-02 / BD-04 / PR-01
 
@@ -574,8 +567,8 @@ Para cada tarjeta terminada, mantener el hilo de evidencia:
 
 En el review, mostrar login, registrar una partida, mostrar las respuestas y
 demostrar el abandono. Distinguir el código del dashboard de su despliegue:
-la versión actualizada de `005_teacher_dashboard.sql` requiere reaplicación y
-prueba en Supabase.
+verificar las migraciones `005` y `006`, las funciones RPC y los permisos en
+Supabase antes de presentarlos como comprobados.
 También faltan validar KPIs pedagógicos, limitar acceso por cursos/matrículas y
 terminar de alinear los logros locales. Una tarjeta configurada o un commit por
 sí solos no prueban que una función esté terminada.
